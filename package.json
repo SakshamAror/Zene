@@ -6,17 +6,16 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web",
-    "build": "expo build",
-    "eject": "expo eject"
+    "web": "expo start --web"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.0",
     "@supabase/supabase-js": "^2.39.0",
     "expo": "~53.0.0",
-    "expo-constants": "17.1.6",
+    "expo-constants": "~14.4.2",
     "expo-router": "^5.0.1",
     "expo-status-bar": "~2.0.0",
+    "nativewind": "^2.0.0",
     "lucide-react-native": "^0.460.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -28,7 +27,6 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@types/react": "~18.2.79",
-    "metro": "^0.80.12",
     "typescript": "~5.3.3"
   },
   "private": true
