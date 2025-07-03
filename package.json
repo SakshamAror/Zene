@@ -10,7 +10,7 @@
     "build": "expo build",
     "eject": "expo eject"
   },
-  "dependencies": {
+"dependencies": {
   "@expo/vector-icons": "^14.0.0",
   "@supabase/supabase-js": "^2.39.0",
   "expo": "~53.0.0",
