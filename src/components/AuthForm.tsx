@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, User, ArrowRight } from 'lucide-react';
+import { View, Text, TextInput, Pressable, SafeAreaView, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 
 interface AuthFormProps {
@@ -13,12 +14,9 @@ export default function AuthForm({ onAuthSuccess }: AuthFormProps) {
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEmailAuth = async () => {
     setLoading(true);
-    setError('');
 
     try {
       if (isSignUp) {
@@ -42,138 +40,145 @@ export default function AuthForm({ onAuthSuccess }: AuthFormProps) {
         onAuthSuccess();
       }
     } catch (error: any) {
-      setError(error.message);
+      Alert.alert('Error', error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-25 via-orange-25 to-yellow-25 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-amber-900 mb-2">Zene</h1>
-          <p className="text-amber-700 text-sm font-medium" style={{ fontFamily: 'Work Sans, sans-serif' }}>
-            Great Minds don't wander. They Conquer
-          </p>
-        </div>
+    <SafeAreaView className="flex-1 bg-gradient-to-br from-amber-25 via-orange-25 to-yellow-25">
+      <View className="flex-1 justify-center px-4">
+        <View className="max-w-md w-full mx-auto">
+          {/* Header */}
+          <View className="items-center mb-8">
+            <Text className="text-4xl font-bold text-amber-900 mb-2">Zene</Text>
+            <Text className="text-amber-700 text-sm font-medium text-center">
+              Great Minds don't wander. They Conquer
+            </Text>
+          </View>
 
-        {/* Auth Form */}
-        <div className="bg-white rounded-2xl shadow-lg border border-amber-200 p-8">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-amber-900 mb-2">
-              {isSignUp ? 'Create Account' : 'Welcome Back'}
-            </h2>
-            <p className="text-amber-600 text-sm">
-              {isSignUp ? 'Start your mindful journey' : 'Continue your mindful journey'}
-            </p>
-          </div>
+          {/* Auth Form */}
+          <View className="bg-white rounded-2xl shadow-lg border border-amber-200 p-8">
+            <View className="items-center mb-6">
+              <Text className="text-2xl font-bold text-amber-900 mb-2">
+                {isSignUp ? 'Create Account' : 'Welcome Back'}
+              </Text>
+              <Text className="text-amber-600 text-sm text-center">
+                {isSignUp ? 'Start your mindful journey' : 'Continue your mindful journey'}
+              </Text>
+            </View>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleEmailAuth} className="space-y-4">
-            {isSignUp && (
-              <div>
-                <label className="block text-sm font-semibold text-amber-900 mb-2">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-amber-400" size={18} />
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-transparent"
-                    placeholder="Enter your full name"
-                    required={isSignUp}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-semibold text-amber-900 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-amber-400" size={18} />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-transparent"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-amber-900 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-amber-400" size={18} />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-transparent"
-                  placeholder="Enter your password"
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-amber-400 hover:text-amber-600"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <>
-                  <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
-                  <ArrowRight size={18} />
-                </>
+            <View className="space-y-4">
+              {isSignUp && (
+                <View>
+                  <Text className="text-sm font-semibold text-amber-900 mb-2">
+                    Full Name
+                  </Text>
+                  <View className="relative">
+                    <View className="absolute left-3 top-3 z-10">
+                      <Ionicons name="person" size={18} color="#fbbf24" />
+                    </View>
+                    <TextInput
+                      value={fullName}
+                      onChangeText={setFullName}
+                      className="w-full pl-10 pr-4 py-3 border border-amber-200 rounded-lg text-amber-800"
+                      placeholder="Enter your full name"
+                      placeholderTextColor="#fbbf24"
+                    />
+                  </View>
+                </View>
               )}
-            </button>
-          </form>
 
-          {/* Toggle Sign Up/Sign In */}
-          <div className="text-center mt-6">
-            <p className="text-amber-600 text-sm">
-              {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-              <button
-                onClick={() => {
+              <View>
+                <Text className="text-sm font-semibold text-amber-900 mb-2">
+                  Email Address
+                </Text>
+                <View className="relative">
+                  <View className="absolute left-3 top-3 z-10">
+                    <Ionicons name="mail" size={18} color="#fbbf24" />
+                  </View>
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    className="w-full pl-10 pr-4 py-3 border border-amber-200 rounded-lg text-amber-800"
+                    placeholder="Enter your email"
+                    placeholderTextColor="#fbbf24"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+              </View>
+
+              <View>
+                <Text className="text-sm font-semibold text-amber-900 mb-2">
+                  Password
+                </Text>
+                <View className="relative">
+                  <View className="absolute left-3 top-3 z-10">
+                    <Ionicons name="lock-closed" size={18} color="#fbbf24" />
+                  </View>
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    className="w-full pl-10 pr-12 py-3 border border-amber-200 rounded-lg text-amber-800"
+                    placeholder="Enter your password"
+                    placeholderTextColor="#fbbf24"
+                    secureTextEntry={!showPassword}
+                  />
+                  <Pressable
+                    onPress={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3"
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-off' : 'eye'}
+                      size={18}
+                      color="#fbbf24"
+                    />
+                  </Pressable>
+                </View>
+              </View>
+
+              <Pressable
+                onPress={handleEmailAuth}
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-amber-600 to-orange-600 py-3 px-4 rounded-lg flex-row items-center justify-center space-x-2 disabled:opacity-50"
+              >
+                {loading ? (
+                  <View className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Text className="text-white font-semibold">
+                      {isSignUp ? 'Create Account' : 'Sign In'}
+                    </Text>
+                    <Ionicons name="arrow-forward" size={18} color="white" />
+                  </>
+                )}
+              </Pressable>
+            </View>
+
+            {/* Toggle Sign Up/Sign In */}
+            <View className="items-center mt-6">
+              <Text className="text-amber-600 text-sm">
+                {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+              </Text>
+              <Pressable
+                onPress={() => {
                   setIsSignUp(!isSignUp);
-                  setError('');
                   setEmail('');
                   setPassword('');
                   setFullName('');
                 }}
-                className="text-amber-700 font-semibold hover:text-amber-800 transition-colors duration-200"
+                className="mt-1"
               >
-                {isSignUp ? 'Sign In' : 'Sign Up'}
-              </button>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+                <Text className="text-amber-700 font-semibold">
+                  {isSignUp ? 'Sign In' : 'Sign Up'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }

@@ -1,6 +1,10 @@
 /** @type {import('tailwindcss').Config} */
-export default {
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+module.exports = {
+  content: [
+    "./App.{js,jsx,ts,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}"
+  ],
+  presets: [require("nativewind/preset")],
   theme: {
     extend: {
       colors: {
@@ -44,15 +48,6 @@ export default {
           900: '#713f12',
         }
       },
-      fontFamily: {
-        sans: ['Crimson Text', 'serif'],
-      },
-      animation: {
-        'pulse': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-      },
-      transitionDuration: {
-        '4000': '4000ms',
-      }
     },
   },
   plugins: [],
