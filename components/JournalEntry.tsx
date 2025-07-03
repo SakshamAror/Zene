@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { saveJournalLog } from '../lib/saveData';
+import { View, TextInput, StyleSheet } from 'react-native';
+import { RotateCw } from 'lucide-react-native';
+import { saveJournalLog } from '@/lib/saveData';
 
 interface JournalEntryProps {
   userId: string;
@@ -41,21 +41,44 @@ export default function JournalEntry({ userId, initialContent, onContentChange }
   }, [content, userId, initialContent, onContentChange]);
 
   return (
-    <View className="relative">
+    <View style={styles.container}>
       <TextInput
         value={content}
         onChangeText={setContent}
         placeholder="How are you feeling today? What's on your mind?"
         placeholderTextColor="#fbbf24"
-        className="w-full h-24 bg-white border border-amber-200 rounded-lg p-3 text-amber-800"
+        style={styles.textInput}
         multiline
         textAlignVertical="top"
       />
       {isSaving && (
-        <View className="absolute top-2 right-2">
-          <Ionicons name="sync" size={16} color="#fbbf24" />
+        <View style={styles.savingIndicator}>
+          <RotateCw size={16} color="#fbbf24" />
         </View>
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'relative',
+  },
+  textInput: {
+    width: '100%',
+    height: 96,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: 8,
+    padding: 12,
+    color: '#92400e',
+    fontSize: 16,
+    textAlignVertical: 'top',
+  },
+  savingIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
+});

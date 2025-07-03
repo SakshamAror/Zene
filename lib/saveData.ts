@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { MeditationSession, WorkSession, JournalLog, Goal } from '../types';
+import { MeditationSession, WorkSession, JournalLog, Goal } from '@/types';
 
 // Save a meditation session
 export async function saveMeditationSession(session: Omit<MeditationSession, 'id'>) {

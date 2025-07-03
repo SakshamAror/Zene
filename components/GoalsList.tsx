@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { getGoals, saveGoal, updateGoal } from '../lib/saveData';
-import type { Goal } from '../types';
+import { View, Text, TextInput, Pressable, Alert, StyleSheet } from 'react-native';
+import { Plus, Check } from 'lucide-react-native';
+import { getGoals, saveGoal, updateGoal } from '@/lib/saveData';
+import type { Goal } from '@/types';
 
 interface GoalsListProps {
   userId: string;
@@ -59,50 +59,48 @@ export default function GoalsList({ userId }: GoalsListProps) {
   };
 
   return (
-    <View className="space-y-4">
+    <View style={styles.container}>
       {/* Add New Goal */}
-      <View className="flex-row space-x-2">
+      <View style={styles.addGoalContainer}>
         <TextInput
           value={newGoalText}
           onChangeText={setNewGoalText}
           placeholder="Add a new goal..."
           placeholderTextColor="#fbbf24"
-          className="flex-1 px-3 py-2 border border-amber-200 rounded-lg text-amber-800"
+          style={styles.goalInput}
         />
         <Pressable
           onPress={handleAddGoal}
           disabled={loading || !newGoalText.trim()}
-          className="bg-amber-600 px-4 py-2 rounded-lg justify-center disabled:opacity-50"
+          style={[styles.addButton, (loading || !newGoalText.trim()) && styles.addButtonDisabled]}
         >
-          <Ionicons name="add" size={20} color="white" />
+          <Plus size={20} color="white" />
         </Pressable>
       </View>
 
       {/* Goals List */}
-      <View className="space-y-2">
+      <View style={styles.goalsList}>
         {goals.map((goal) => (
           <Pressable
             key={goal.id}
             onPress={() => handleToggleGoal(goal)}
-            className="flex-row items-center space-x-3 p-3 bg-amber-25 rounded-lg"
+            style={styles.goalItem}
           >
             <View
-              className={`w-6 h-6 rounded-full border-2 ${
-                goal.completed
-                  ? 'bg-amber-600 border-amber-600'
-                  : 'border-amber-300'
-              } items-center justify-center`}
+              style={[
+                styles.goalCheckbox,
+                goal.completed && styles.goalCheckboxCompleted,
+              ]}
             >
               {goal.completed && (
-                <Ionicons name="checkmark" size={16} color="white" />
+                <Check size={16} color="white" />
               )}
             </View>
             <Text
-              className={`flex-1 ${
-                goal.completed
-                  ? 'text-amber-600 line-through'
-                  : 'text-amber-800'
-              } font-medium`}
+              style={[
+                styles.goalText,
+                goal.completed && styles.goalTextCompleted,
+              ]}
             >
               {goal.goal}
             </Text>
@@ -110,7 +108,7 @@ export default function GoalsList({ userId }: GoalsListProps) {
         ))}
         
         {goals.length === 0 && (
-          <Text className="text-amber-600 text-center py-4">
+          <Text style={styles.emptyText}>
             No goals yet. Add your first goal above!
           </Text>
         )}
@@ -118,3 +116,74 @@ export default function GoalsList({ userId }: GoalsListProps) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 16,
+  },
+  addGoalContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  goalInput: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: 8,
+    color: '#92400e',
+    fontSize: 16,
+  },
+  addButton: {
+    backgroundColor: '#d97706',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonDisabled: {
+    opacity: 0.5,
+  },
+  goalsList: {
+    gap: 8,
+  },
+  goalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    backgroundColor: '#fffdf7',
+    borderRadius: 8,
+  },
+  goalCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#fcd34d',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goalCheckboxCompleted: {
+    backgroundColor: '#d97706',
+    borderColor: '#d97706',
+  },
+  goalText: {
+    flex: 1,
+    color: '#92400e',
+    fontWeight: '500',
+    fontSize: 16,
+  },
+  goalTextCompleted: {
+    color: '#d97706',
+    textDecorationLine: 'line-through',
+  },
+  emptyText: {
+    color: '#d97706',
+    textAlign: 'center',
+    paddingVertical: 16,
+    fontSize: 16,
+  },
+});
