@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react-native';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../lib/supabase';
 
 interface AuthFormProps {
   onAuthSuccess: () => void;
