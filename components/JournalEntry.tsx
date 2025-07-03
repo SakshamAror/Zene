@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, StyleSheet } from 'react-native';
 import { RotateCw } from 'lucide-react-native';
-import { saveJournalLog } from '@/lib/saveData';
+import { saveJournalLog } from '../lib/saveData';
 
 interface JournalEntryProps {
   userId: string;
