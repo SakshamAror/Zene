@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Leaf, Clock, CircleCheck as CheckCircle, BookOpen } from 'lucide-react-native';
-import { useAuth } from '@/hooks/useAuth';
-import AuthForm from '@/components/AuthForm';
-import JournalEntry from '@/components/JournalEntry';
-import GoalsList from '@/components/GoalsList';
-import { getMeditationSessions, getWorkSessions, getJournalLogs, getGoals } from '@/lib/saveData';
+import { useAuth } from '../../hooks/useAuth';
+import AuthForm from '../../components/AuthForm';
+import JournalEntry from '../../components/JournalEntry';
+import GoalsList from '../../components/GoalsList';
+import {
+  getMeditationSessions,
+  getWorkSessions,
+  getJournalLogs,
+  getGoals
+} from '../../lib/saveData';
 
 export default function HomeScreen() {
   const { user, loading } = useAuth();
