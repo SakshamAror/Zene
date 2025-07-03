@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, Alert, StyleSheet } from 'react-native';
 import { Plus, Check } from 'lucide-react-native';
-import { getGoals, saveGoal, updateGoal } from '@/lib/saveData';
+import { getGoals, saveGoal, updateGoal } from "../lib/saveData';
 import type { Goal } from '@/types';
 
 interface GoalsListProps {
