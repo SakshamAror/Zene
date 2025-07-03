@@ -1,0 +1,256 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dark mode styles: only background for now */
+.dark {
+    --tw-bg-opacity: 1;
+    background-color: rgb(25 18 2 / var(--tw-bg-opacity));
+}
+
+.dark .min-h-screen,
+.dark .min-h-screen.bg-gradient-to-br,
+.dark .min-h-screen.bg-gradient-to-br.bg-gradient-to-t {
+    background-color: rgb(18, 13, 2) !important;
+    background-image: none !important;
+}
+
+/* Navigation pane lighter background in dark mode */
+.dark nav,
+.dark .bg-gradient-to-t {
+    background-color: rgb(35, 26, 9) !important;
+    background-image: none !important;
+}
+
+/* Prevent dark mode from changing bar chart bar colors */
+.dark .bg-gradient-to-t.from-amber-300.to-amber-400,
+.dark .bg-gradient-to-t.from-orange-300.to-orange-400 {
+    background-image: linear-gradient(to top, #fde68a, #f59e0b) !important;
+}
+
+.dark .bg-gradient-to-t.from-orange-300.to-orange-400 {
+    background-image: linear-gradient(to top, #fdba74, #fb923c) !important;
+}
+
+/* Preserve meditation timer circle gradient in dark mode */
+.dark .bg-gradient-to-br.from-amber-400.to-orange-400 {
+    background-image: linear-gradient(to bottom right, #fbbf24, #fb923c) !important;
+}
+
+/* Highlighted nav button and hover in dark mode */
+.dark .bg-amber-100:not(.bg-gradient-to-br):not(.bg-gradient-to-t) {
+    background-color: rgb(253, 230, 138) !important;
+}
+
+.dark .hover\:bg-amber-50:hover {
+    background-color: rgb(248, 232, 168) !important;
+}
+
+/* Titles and sub-headings lighter in dark mode */
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark .text-amber-800,
+.dark .text-amber-700,
+.dark .font-bold {
+    color: #fef3c7 !important;
+}
+
+.dark .font-semibold {
+    color: #fef3c7cc !important;
+}
+
+/* Make sub-headings (text-amber-700 text-sm font-semibold) slightly darker in dark mode */
+.dark .text-amber-700.text-sm.font-semibold {
+    color: #d1b866 !important;
+}
+
+.dark .text-amber-700.text-sm.font-medium {
+    color: #d1b866 !important;
+}
+
+/* Make Today's Wisdom quote text slightly darker in dark mode */
+.dark .text-amber-700.italic {
+    color: #d1b866 !important;
+}
+
+/* Make dark brown titles creamier in dark mode */
+.dark .text-amber-900 {
+    color: #fef3c7 !important;
+}
+
+/* Keep nav icons and nav text the same color in dark mode */
+.dark nav .text-amber-800,
+.dark nav .text-amber-600,
+.dark nav .text-amber-700,
+.dark nav .text-xs,
+.dark nav svg {
+    color: #92400e !important;
+}
+
+/* Keep meditation button text and milestone/summary label text the same color in dark mode */
+.dark .text-amber-400 {
+    color: #fbbf24 !important;
+}
+
+.dark .text-amber-600 {
+    color: #d97706 !important;
+}
+
+.dark .text-amber-700 {
+    color: #b45309 !important;
+}
+
+.dark .text-orange-700 {
+    color: #c2410c !important;
+}
+
+/* Tiles (cards, panels) lighter than app background in dark mode */
+.dark .bg-white,
+.dark .bg-amber-50,
+.dark .bg-gradient-to-br:not(nav),
+.dark .bg-gradient-to-t:not(nav) {
+    background-color: rgb(45, 34, 9) !important;
+    background-image: none !important;
+}
+
+/* Make book summary backgrounds darker in dark mode */
+.dark button[style*="background"] {
+    position: relative;
+}
+
+.dark button[style*="background"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(18, 13, 2, 0.247);
+    border-radius: 1rem;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Keep book summary text above the overlay and preserve colors */
+.dark button[style*="background"]>* {
+    position: relative;
+    z-index: 2;
+}
+
+/* Keep label background colors the same in dark mode */
+.dark .bg-amber-100,
+.dark .bg-orange-100,
+.dark .bg-amber-50,
+.dark .bg-yellow-100,
+.dark .bg-green-100 {
+    background-color: inherit !important;
+}
+
+/* Make book summary labels cream colored in dark mode */
+.dark button[style*="background"] .bg-amber-100,
+.dark button[style*="background"] .bg-orange-100,
+.dark button[style*="background"] .bg-amber-50 {
+    background-color: #fef3c7 !important;
+}
+
+/* Keep milestone work labels light in dark mode */
+.dark .bg-orange-100 {
+    background-color: #fed7aa !important;
+}
+
+/* Make book summary text lighter and creamier in dark mode */
+.dark button[style*="background"] .text-amber-900 {
+    color: #fef3c7 !important;
+}
+
+/* Make summary content text lighter and creamier in dark mode */
+.dark .text-amber-700 {
+    color: #fef3c7 !important;
+}
+
+/* Preserve favourite button text colors in dark mode - more specific targeting */
+.dark button.text-yellow-600,
+.dark button .text-yellow-600 {
+    color: #d97706 !important;
+}
+
+.dark button.text-amber-700,
+.dark button .text-amber-700 {
+    color: #b45309 !important;
+}
+
+/* Make tile borders darker and more visible in dark mode */
+.dark .border-amber-200 {
+    border-color: rgb(144, 113, 52) !important;
+}
+
+.dark .border-amber-100 {
+    border-color: rgb(75, 57, 21) !important;
+}
+
+.dark .border-t-amber-200 {
+    border-top-color: rgb(115, 91, 42) !important;
+}
+
+/* Make daily journal button text darker when hovered in dark mode */
+.dark button:hover .text-amber-600,
+.dark button:hover .text-amber-700,
+.dark button:hover .text-amber-900 {
+    color: #92400e !important;
+}
+
+/* Preserve milestone label text colors in dark mode - high specificity */
+.dark span.bg-amber-100.text-amber-700 {
+    color: #b45309 !important;
+}
+
+.dark span.bg-orange-100.text-orange-700 {
+    color: #c2410c !important;
+}
+
+/* Give audio options buttons a medium background in dark mode */
+.dark .bg-amber-25 {
+    background-color: rgb(69, 52, 18) !important;
+}
+
+/* Make selected audio option button text darker in dark mode */
+.dark .bg-amber-100 .text-amber-900,
+.dark .bg-amber-100 .text-amber-600 {
+    color: #92400e !important;
+}
+
+/* Customize volume slider thumb colors */
+.slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #92400e;
+    cursor: pointer;
+    border: none;
+}
+
+.slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #92400e;
+    cursor: pointer;
+    border: none;
+}
+
+/* Dark mode volume slider thumb */
+.dark .slider::-webkit-slider-thumb {
+    background: #fef3c7;
+}
+
+.dark .slider::-moz-range-thumb {
+    background: #fef3c7;
+}
+
+/* Make meditation timer button text darker in dark mode */
+.dark .text-amber-700.text-sm.font-semibold {
+    color: #92400e !important;
+}
