@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Leaf, Clock, CheckCircle, BookOpen } from 'lucide-react-native';
+import { Leaf, Clock, CircleCheck as CheckCircle, BookOpen } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import AuthForm from '@/components/AuthForm';
 import JournalEntry from '@/components/JournalEntry';
