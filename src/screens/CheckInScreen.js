@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,15 +7,11 @@ import {
   TouchableOpacity,
   Dimensions,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Settings, ArrowUp, Plus, Clock } from 'lucide-react-native';
-import { useAuth } from '../../hooks/useAuth';
-import { supabase } from '../../lib/supabase';
-import AuthForm from '../../components/AuthForm';
+import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const feelings = [
   { name: 'Joyful', color: ['#FFD93D', '#FF8C42'], position: { top: 120, left: 50 } },
@@ -28,98 +24,14 @@ const feelings = [
   { name: 'Content', color: ['#4facfe', '#00f2fe'], position: { top: 600, right: 50 } },
 ];
 
-interface CheckInData {
-  feeling: string;
-  note?: string;
-  date: string;
-}
-
 export default function CheckInScreen() {
-  const { user, loading } = useAuth();
-  const [selectedFeeling, setSelectedFeeling] = useState<any>(null);
+  const [selectedFeeling, setSelectedFeeling] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
-  const [note, setNote] = useState('');
-  const [stats, setStats] = useState({ uniqueFeelings: 0, dayStreak: 0 });
 
-  useEffect(() => {
-    if (user) {
-      loadStats();
-    }
-  }, [user]);
-
-  const loadStats = async () => {
-    try {
-      // Get unique feelings count
-      const { data: journalData } = await supabase
-        .from('journal_logs')
-        .select('content')
-        .eq('user_id', user?.id);
-
-      // Get streak (simplified - count recent entries)
-      const { data: recentEntries } = await supabase
-        .from('journal_logs')
-        .select('date')
-        .eq('user_id', user?.id)
-        .order('date', { ascending: false })
-        .limit(7);
-
-      setStats({
-        uniqueFeelings: journalData?.length || 0,
-        dayStreak: recentEntries?.length || 0,
-      });
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    }
-  };
-
-  const handleFeelingSelect = (feeling: any) => {
+  const handleFeelingSelect = (feeling) => {
     setSelectedFeeling(feeling);
     setShowDetails(true);
   };
-
-  const completeCheckIn = async () => {
-    if (!selectedFeeling || !user) return;
-
-    try {
-      const checkInData: CheckInData = {
-        feeling: selectedFeeling.name,
-        note: note.trim() || undefined,
-        date: new Date().toISOString().split('T')[0],
-      };
-
-      const { error } = await supabase
-        .from('journal_logs')
-        .upsert({
-          user_id: user.id,
-          date: checkInData.date,
-          content: `Feeling: ${checkInData.feeling}${checkInData.note ? `\nNote: ${checkInData.note}` : ''}`,
-        });
-
-      if (error) throw error;
-
-      Alert.alert('Success', 'Check-in completed!');
-      setShowDetails(false);
-      setSelectedFeeling(null);
-      setNote('');
-      loadStats();
-    } catch (error: any) {
-      Alert.alert('Error', error.message);
-    }
-  };
-
-  if (loading) {
-    return (
-      <LinearGradient colors={['#000000', '#1a1a1a']} style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </LinearGradient>
-    );
-  }
-
-  if (!user) {
-    return <AuthForm onAuthSuccess={() => {}} />;
-  }
 
   if (showDetails && selectedFeeling) {
     return (
@@ -127,10 +39,10 @@ export default function CheckInScreen() {
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => setShowDetails(false)}>
-              <ArrowUp size={24} color="#ffffff" />
+              <Ionicons name="arrow-back" size={24} color="#ffffff" />
             </TouchableOpacity>
             <TouchableOpacity>
-              <Settings size={24} color="#ffffff" />
+              <Ionicons name="settings-outline" size={24} color="#ffffff" />
             </TouchableOpacity>
           </View>
 
@@ -144,12 +56,12 @@ export default function CheckInScreen() {
             <Text style={styles.feelingName}>{selectedFeeling.name.toLowerCase()}</Text>
             
             <View style={styles.timeContainer}>
-              <Clock size={16} color="#888888" />
-              <Text style={styles.timeText}>Today, {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+              <Ionicons name="time-outline" size={16} color="#888888" />
+              <Text style={styles.timeText}>Today, 9:58am</Text>
             </View>
 
             <TouchableOpacity style={styles.editButton}>
-              <Plus size={16} color="#ffffff" />
+              <Ionicons name="add-circle-outline" size={16} color="#ffffff" />
               <Text style={styles.editButtonText}>Edit Emotions</Text>
             </TouchableOpacity>
 
@@ -160,7 +72,7 @@ export default function CheckInScreen() {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.completeButton} onPress={completeCheckIn}>
+            <TouchableOpacity style={styles.completeButton}>
               <Text style={styles.completeButtonText}>Complete check-in</Text>
             </TouchableOpacity>
           </View>
@@ -174,10 +86,10 @@ export default function CheckInScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity>
-            <Settings size={24} color="#ffffff" />
+            <Ionicons name="settings-outline" size={24} color="#ffffff" />
           </TouchableOpacity>
           <TouchableOpacity>
-            <ArrowUp size={24} color="#ffffff" />
+            <Ionicons name="arrow-up" size={24} color="#ffffff" />
           </TouchableOpacity>
         </View>
 
@@ -191,7 +103,7 @@ export default function CheckInScreen() {
             style={styles.mainCircle}
           >
             <TouchableOpacity style={styles.checkInButton}>
-              <Plus size={32} color="#ffffff" />
+              <Ionicons name="add" size={32} color="#ffffff" />
               <Text style={styles.checkInText}>Check in</Text>
             </TouchableOpacity>
           </LinearGradient>
@@ -199,11 +111,11 @@ export default function CheckInScreen() {
 
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{stats.uniqueFeelings}</Text>
-            <Text style={styles.statLabel}>journal{'\n'}entries</Text>
+            <Text style={styles.statNumber}>4</Text>
+            <Text style={styles.statLabel}>unique{'\n'}feelings</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{stats.dayStreak}</Text>
+            <Text style={styles.statNumber}>2</Text>
             <Text style={styles.statLabel}>day{'\n'}streak</Text>
           </View>
         </View>
@@ -236,15 +148,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#ffffff',
-    fontSize: 16,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -263,7 +166,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     textAlign: 'center',
     lineHeight: 40,
-    fontFamily: 'Inter-SemiBold',
   },
   circleContainer: {
     alignItems: 'center',
@@ -284,7 +186,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '500',
     marginTop: 8,
-    fontFamily: 'Inter-SemiBold',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -299,14 +200,12 @@ const styles = StyleSheet.create({
     fontSize: 48,
     fontWeight: '300',
     color: '#666666',
-    fontFamily: 'Inter-Regular',
   },
   statLabel: {
     fontSize: 14,
     color: '#666666',
     textAlign: 'center',
     lineHeight: 18,
-    fontFamily: 'Inter-Regular',
   },
   feelingsContainer: {
     flex: 1,
@@ -328,7 +227,6 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
   },
   feelingDetailContainer: {
     flex: 1,
@@ -347,14 +245,12 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontStyle: 'italic',
     marginBottom: 8,
-    fontFamily: 'Inter-Regular',
   },
   feelingName: {
     fontSize: 32,
     fontWeight: '600',
     color: '#FFD93D',
     marginBottom: 20,
-    fontFamily: 'Inter-Bold',
   },
   timeContainer: {
     flexDirection: 'row',
@@ -369,7 +265,6 @@ const styles = StyleSheet.create({
     color: '#888888',
     fontSize: 14,
     marginLeft: 6,
-    fontFamily: 'Inter-Regular',
   },
   editButton: {
     flexDirection: 'row',
@@ -384,7 +279,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     marginLeft: 6,
-    fontFamily: 'Inter-Regular',
   },
   journalContainer: {
     width: '100%',
@@ -394,7 +288,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#ffffff',
     marginBottom: 16,
-    fontFamily: 'Inter-SemiBold',
   },
   journalInput: {
     backgroundColor: '#333333',
@@ -405,7 +298,6 @@ const styles = StyleSheet.create({
   journalPlaceholder: {
     color: '#888888',
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
   },
   completeButton: {
     backgroundColor: '#ffffff',
@@ -419,6 +311,5 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
   },
 });
