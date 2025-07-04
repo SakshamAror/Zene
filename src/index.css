@@ -1,289 +1,156 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Dark mode styles: only background for now */
-.dark {
-    --tw-bg-opacity: 1;
-    background-color: rgb(25 18 2 / var(--tw-bg-opacity));
+/* Base styles */
+* {
+  box-sizing: border-box;
 }
 
-.dark .min-h-screen,
-.dark .min-h-screen.bg-gradient-to-br,
-.dark .min-h-screen.bg-gradient-to-br.bg-gradient-to-t {
-    background-color: rgb(18, 13, 2) !important;
-    background-image: none !important;
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Navigation pane lighter background in dark mode */
-.dark nav,
-.dark .bg-gradient-to-t {
-    background-color: rgb(35, 26, 9) !important;
-    background-image: none !important;
+/* Dark mode transitions */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-/* Prevent dark mode from changing bar chart bar colors */
-.dark .bg-gradient-to-t.from-amber-300.to-amber-400,
-.dark .bg-gradient-to-t.from-orange-300.to-orange-400 {
-    background-image: linear-gradient(to top, #fde68a, #f59e0b) !important;
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
 }
 
-.dark .bg-gradient-to-t.from-orange-300.to-orange-400 {
-    background-image: linear-gradient(to top, #fdba74, #fb923c) !important;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-/* Preserve meditation timer circle gradient in dark mode */
-.dark .bg-gradient-to-br.from-amber-400.to-orange-400 {
-    background-image: linear-gradient(to bottom right, #fbbf24, #fb923c) !important;
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
 }
 
-/* Fix navigation button contrast - selected state */
-.dark .bg-amber-100:not(.bg-gradient-to-br):not(.bg-gradient-to-t) {
-    background-color: rgb(253, 230, 138) !important;
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
 }
 
-.dark .hover\:bg-amber-50:hover {
-    background-color: rgb(248, 232, 168) !important;
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
-/* Fix navigation button text contrast when selected */
-.dark .bg-amber-100 .text-amber-800,
-.dark .bg-amber-100 .text-amber-700,
-.dark .bg-amber-100 .text-amber-600 {
-    color: #92400e !important;
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
-/* Titles and sub-headings lighter in dark mode */
-.dark h1,
-.dark h2,
-.dark h3,
-.dark h4,
-.dark .text-amber-800,
-.dark .text-amber-700,
-.dark .font-bold {
-    color: #fef3c7 !important;
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.dark .font-semibold {
-    color: #fef3c7cc !important;
+/* Focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800;
 }
 
-/* Make sub-headings (text-amber-700 text-sm font-semibold) slightly darker in dark mode */
-.dark .text-amber-700.text-sm.font-semibold {
-    color: #d1b866 !important;
+/* Custom range input styles */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
 }
 
-.dark .text-amber-700.text-sm.font-medium {
-    color: #d1b866 !important;
+input[type="range"]::-webkit-slider-track {
+  background: #e2e8f0;
+  height: 8px;
+  border-radius: 4px;
 }
 
-/* Make Today's Wisdom quote text slightly darker in dark mode */
-.dark .text-amber-700.italic {
-    color: #d1b866 !important;
+.dark input[type="range"]::-webkit-slider-track {
+  background: #475569;
 }
 
-/* Make dark brown titles creamier in dark mode */
-.dark .text-amber-900 {
-    color: #fef3c7 !important;
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #10b981;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Keep nav icons and nav text the same color in dark mode */
-.dark nav .text-amber-800,
-.dark nav .text-amber-600,
-.dark nav .text-amber-700,
-.dark nav .text-xs,
-.dark nav svg {
-    color: #92400e !important;
+input[type="range"]::-moz-range-track {
+  background: #e2e8f0;
+  height: 8px;
+  border-radius: 4px;
+  border: none;
 }
 
-/* Fix meditation time option button contrast */
-.dark .bg-amber-100.text-amber-800 {
-    background-color: #fef3c7 !important;
-    color: #92400e !important;
+.dark input[type="range"]::-moz-range-track {
+  background: #475569;
 }
 
-.dark .bg-amber-100.text-amber-700 {
-    background-color: #fef3c7 !important;
-    color: #92400e !important;
+input[type="range"]::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #10b981;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Keep meditation button text and milestone/summary label text the same color in dark mode */
-.dark .text-amber-400 {
-    color: #fbbf24 !important;
+/* Animation for loading states */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
 }
 
-.dark .text-amber-600 {
-    color: #d97706 !important;
+.shimmer {
+  background: linear-gradient(90deg, #f1f5f9 0px, #e2e8f0 40px, #f1f5f9 80px);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
 }
 
-.dark .text-amber-700 {
-    color: #b45309 !important;
+.dark .shimmer {
+  background: linear-gradient(90deg, #334155 0px, #475569 40px, #334155 80px);
+  background-size: 200px 100%;
 }
 
-.dark .text-orange-700 {
-    color: #c2410c !important;
+/* Smooth transitions for theme switching */
+html {
+  transition: background-color 0.2s ease;
 }
 
-/* Tiles (cards, panels) lighter than app background in dark mode */
-.dark .bg-white,
-.dark .bg-amber-50,
-.dark .bg-gradient-to-br:not(nav),
-.dark .bg-gradient-to-t:not(nav) {
-    background-color: rgb(45, 34, 9) !important;
-    background-image: none !important;
+/* Custom button hover effects */
+.btn-hover {
+  @apply transition-all duration-200 transform hover:scale-105 active:scale-95;
 }
 
-/* Make book summary backgrounds darker in dark mode */
-.dark button[style*="background"] {
-    position: relative;
+/* Glass morphism effect */
+.glass {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.dark button[style*="background"]::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(18, 13, 2, 0.247);
-    border-radius: 1rem;
-    pointer-events: none;
-    z-index: 1;
-}
-
-/* Keep book summary text above the overlay and preserve colors */
-.dark button[style*="background"]>* {
-    position: relative;
-    z-index: 2;
-}
-
-/* Keep label background colors the same in dark mode */
-.dark .bg-amber-100,
-.dark .bg-orange-100,
-.dark .bg-amber-50,
-.dark .bg-yellow-100,
-.dark .bg-green-100 {
-    background-color: inherit !important;
-}
-
-/* Make book summary labels cream colored in dark mode */
-.dark button[style*="background"] .bg-amber-100,
-.dark button[style*="background"] .bg-orange-100,
-.dark button[style*="background"] .bg-amber-50 {
-    background-color: #fef3c7 !important;
-}
-
-/* Keep milestone work labels light in dark mode */
-.dark .bg-orange-100 {
-    background-color: #fed7aa !important;
-}
-
-/* Make book summary text lighter and creamier in dark mode */
-.dark button[style*="background"] .text-amber-900 {
-    color: #fef3c7 !important;
-}
-
-/* Make summary content text lighter and creamier in dark mode */
-.dark .text-amber-700 {
-    color: #fef3c7 !important;
-}
-
-/* Preserve favourite button text colors in dark mode - more specific targeting */
-.dark button.text-yellow-600,
-.dark button .text-yellow-600 {
-    color: #d97706 !important;
-}
-
-.dark button.text-amber-700,
-.dark button .text-amber-700 {
-    color: #b45309 !important;
-}
-
-/* Make tile borders darker and more visible in dark mode */
-.dark .border-amber-200 {
-    border-color: rgb(144, 113, 52) !important;
-}
-
-.dark .border-amber-100 {
-    border-color: rgb(75, 57, 21) !important;
-}
-
-.dark .border-t-amber-200 {
-    border-top-color: rgb(115, 91, 42) !important;
-}
-
-/* Make daily journal button text darker when hovered in dark mode */
-.dark button:hover .text-amber-600,
-.dark button:hover .text-amber-700,
-.dark button:hover .text-amber-900 {
-    color: #92400e !important;
-}
-
-/* Preserve milestone label text colors in dark mode - high specificity */
-.dark span.bg-amber-100.text-amber-700 {
-    color: #b45309 !important;
-}
-
-.dark span.bg-orange-100.text-orange-700 {
-    color: #c2410c !important;
-}
-
-/* Give audio options buttons a medium background in dark mode */
-.dark .bg-amber-25 {
-    background-color: rgb(69, 52, 18) !important;
-}
-
-/* Fix ambient sound button hover - remove text shadow and maintain contrast */
-.dark .bg-amber-25:hover {
-    background-color: rgb(85, 65, 25) !important;
-}
-
-.dark .bg-amber-25:hover .text-amber-700,
-.dark .bg-amber-25:hover .text-amber-800 {
-    color: #fef3c7 !important;
-}
-
-/* Make selected audio option button text darker in dark mode */
-.dark .bg-amber-100 .text-amber-900,
-.dark .bg-amber-100 .text-amber-600 {
-    color: #92400e !important;
-}
-
-/* Customize volume slider thumb colors */
-.slider::-webkit-slider-thumb {
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #92400e;
-    cursor: pointer;
-    border: none;
-}
-
-.slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #92400e;
-    cursor: pointer;
-    border: none;
-}
-
-/* Dark mode volume slider thumb */
-.dark .slider::-webkit-slider-thumb {
-    background: #fef3c7;
-}
-
-.dark .slider::-moz-range-thumb {
-    background: #fef3c7;
-}
-
-/* Make meditation timer button text darker in dark mode */
-.dark .text-amber-700.text-sm.font-semibold {
-    color: #92400e !important;
-}
-
-/* Remove text shadows globally in dark mode */
-.dark * {
-    text-shadow: none !important;
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #10b981, #14b8a6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
