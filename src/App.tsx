@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
-import AuthForm from './components/AuthForm';
-import Dashboard from './components/Dashboard';
-import MeditationTimer from './components/MeditationTimer';
-import WorkTimer from './components/WorkTimer';
-import Goals from './components/Goals';
-import Journal from './components/Journal';
-import Learn from './components/Learn';
-import Analytics from './components/Analytics';
+import AuthForm from './components/AuthForm.tsx';
+import Dashboard from './components/Dashboard.tsx';
+import MeditationTimer from './components/MeditationTimer.tsx';
+import WorkTimer from './components/WorkTimer.tsx';
+import Goals from './components/Goals.tsx';
+import Journal from './components/Journal.tsx';
+import Learn from './components/Learn.tsx';
+import Analytics from './components/Analytics.tsx';
 import { Home, Clock, Target, BookOpen, PenTool, BarChart3, LogOut, Moon, Sun } from 'lucide-react';
 
 type View = 'dashboard' | 'meditation' | 'work' | 'goals' | 'journal' | 'learn' | 'analytics';
