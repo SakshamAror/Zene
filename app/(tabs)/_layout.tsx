@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Heart, Leaf, BookOpen, BarChart3 } from 'lucide-react-native';
+import { Heart, Leaf, BookOpen, ChartBar as BarChart3 } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
 
 const TabBarBackground = () => (

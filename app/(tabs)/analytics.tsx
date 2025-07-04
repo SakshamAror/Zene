@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Settings, BarChart3, TrendingUp, Smile, Leaf, BookOpen, Flame, Heart } from 'lucide-react-native';
+import { ArrowLeft, Settings, ChartBar as BarChart3, TrendingUp, Smile, Leaf, BookOpen, Flame, Heart } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import AuthForm from '../../components/AuthForm';
