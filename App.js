@@ -1,4 +1,4 @@
-import 'react-native-screens';
+import { enableScreens } from 'react-native-screens';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -12,6 +12,9 @@ import MeditateScreen from './src/screens/MeditateScreen';
 import JournalScreen from './src/screens/JournalScreen';
 import AnalyticsScreen from './src/screens/AnalyticsScreen';
 import { AuthProvider } from './src/context/AuthContext';
+
+// Enable screens for better performance
+enableScreens();
 
 const Tab = createBottomTabNavigator();
 
