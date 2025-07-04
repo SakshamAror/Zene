@@ -6,13 +6,18 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { ArrowLeft, Settings, Play, Pause, RotateCcw } from 'lucide-react-native';
+import { useAuth } from '../../hooks/useAuth';
+import { supabase } from '../../lib/supabase';
+import AuthForm from '../../components/AuthForm';
 
 const { width } = Dimensions.get('window');
 
 export default function MeditateScreen() {
+  const { user, loading } = useAuth();
   const [duration, setDuration] = useState(300); // 5 minutes
   const [timeLeft, setTimeLeft] = useState(duration);
   const [isActive, setIsActive] = useState(false);
@@ -26,28 +31,50 @@ export default function MeditateScreen() {
   ];
 
   useEffect(() => {
-    let interval = null;
+    let interval: NodeJS.Timeout | null = null;
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft(time => {
           if (time <= 1) {
             setIsActive(false);
             setIsCompleted(true);
+            saveMeditationSession(duration);
             return 0;
           }
           return time - 1;
         });
       }, 1000);
     } else if (!isActive && timeLeft !== 0) {
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
     }
-    return () => clearInterval(interval);
-  }, [isActive, timeLeft]);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isActive, timeLeft, duration]);
 
   useEffect(() => {
     setTimeLeft(duration);
     setIsCompleted(false);
   }, [duration]);
+
+  const saveMeditationSession = async (sessionDuration: number) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('meditation_sessions')
+        .insert({
+          user_id: user.id,
+          duration: sessionDuration,
+          date: new Date().toISOString().split('T')[0],
+        });
+
+      if (error) throw error;
+      Alert.alert('Great job!', 'Meditation session completed and saved.');
+    } catch (error: any) {
+      console.error('Error saving meditation session:', error);
+    }
+  };
 
   const toggleTimer = () => {
     setIsActive(!isActive);
@@ -59,24 +86,36 @@ export default function MeditateScreen() {
     setIsCompleted(false);
   };
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const progress = ((duration - timeLeft) / duration) * 100;
+  if (loading) {
+    return (
+      <LinearGradient colors={['#000000', '#1a1a1a']} style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  if (!user) {
+    return <AuthForm onAuthSuccess={() => {}} />;
+  }
 
   return (
     <LinearGradient colors={['#000000', '#1a1a1a']} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity>
-            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+            <ArrowLeft size={24} color="#ffffff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Meditation</Text>
           <TouchableOpacity>
-            <Ionicons name="settings-outline" size={24} color="#ffffff" />
+            <Settings size={24} color="#ffffff" />
           </TouchableOpacity>
         </View>
 
@@ -102,17 +141,17 @@ export default function MeditateScreen() {
               onPress={toggleTimer}
               style={[styles.controlButton, styles.playButton]}
             >
-              <Ionicons 
-                name={isActive ? 'pause' : 'play'} 
-                size={32} 
-                color="#ffffff" 
-              />
+              {isActive ? (
+                <Pause size={32} color="#ffffff" />
+              ) : (
+                <Play size={32} color="#ffffff" />
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               onPress={resetTimer}
               style={[styles.controlButton, styles.resetButton]}
             >
-              <Ionicons name="refresh" size={24} color="#ffffff" />
+              <RotateCcw size={24} color="#ffffff" />
             </TouchableOpacity>
           </View>
 
@@ -167,6 +206,16 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -178,6 +227,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#ffffff',
+    fontFamily: 'Inter-SemiBold',
   },
   content: {
     flex: 1,
@@ -189,6 +239,7 @@ const styles = StyleSheet.create({
     color: '#888888',
     textAlign: 'center',
     marginBottom: 40,
+    fontFamily: 'Inter-Regular',
   },
   timerContainer: {
     alignItems: 'center',
@@ -213,11 +264,13 @@ const styles = StyleSheet.create({
     fontSize: 48,
     fontWeight: '300',
     color: '#ffffff',
+    fontFamily: 'Inter-Regular',
   },
   completedText: {
     fontSize: 16,
     color: '#4ECDC4',
     marginTop: 8,
+    fontFamily: 'Inter-Regular',
   },
   controls: {
     flexDirection: 'row',
@@ -247,6 +300,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
     marginBottom: 16,
+    fontFamily: 'Inter-SemiBold',
   },
   durationButtons: {
     flexDirection: 'row',
@@ -267,6 +321,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter-SemiBold',
   },
   durationButtonTextActive: {
     color: '#000000',
@@ -290,5 +345,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter-SemiBold',
   },
 });
