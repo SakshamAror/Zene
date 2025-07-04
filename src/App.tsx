@@ -48,7 +48,7 @@ function App() {
   }
 
   if (!user) {
-    return <AuthForm onAuthSuccess={() => {}} />;
+    return <AuthForm onAuthSuccess={() => { }} />;
   }
 
   const navigationItems = [
@@ -94,7 +94,7 @@ function App() {
               </div>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white">Zene</h1>
             </div>
-            
+
             <div className="flex items-center space-x-3">
               <button
                 onClick={toggleDarkMode}
@@ -120,16 +120,15 @@ function App() {
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
-              
+
               return (
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id as View)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
-                    isActive
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${isActive
                       ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
+                    }`}
                 >
                   <Icon size={20} />
                   <span className="font-medium">{item.label}</span>
