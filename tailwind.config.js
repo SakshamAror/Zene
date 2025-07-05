@@ -5,45 +5,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        amber: {
-          25: '#fffbeb',
-          50: '#fef3c7',
-          100: '#fde68a',
-          200: '#fcd34d',
-          300: '#fbbf24',
-          400: '#f59e0b',
-          500: '#d97706',
-          600: '#b45309',
-          700: '#92400e',
-          800: '#78350f',
-          900: '#451a03',
-        },
-        yellow: {
-          25: '#fefce8',
-          50: '#fefce8',
-          100: '#fef3c7',
-          200: '#fde047',
-          300: '#facc15',
-          400: '#eab308',
-          500: '#ca8a04',
-          600: '#a16207',
-          700: '#854d0e',
-          800: '#713f12',
-          900: '#422006',
-        },
-        orange: {
-          25: '#fffaf0',
-          50: '#fff7ed',
-          100: '#ffedd5',
-          200: '#fed7aa',
-          300: '#fdba74',
-          400: '#fb923c',
-          500: '#f97316',
-          600: '#ea580c',
-          700: '#c2410c',
-          800: '#9a3412',
-          900: '#7c2d12',
-        },
         slate: {
           25: '#fafafa',
           50: '#f8fafc',
@@ -87,7 +48,6 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         serif: ['Crimson Text', 'serif'],
-        handwriting: ['Kalam', 'cursive'],
       },
       animation: {
         'pulse': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
@@ -97,10 +57,6 @@ export default {
       },
       backdropBlur: {
         xs: '2px',
-      },
-      spacing: {
-        '18': '4.5rem',
-        '88': '22rem',
       },
     },
   },

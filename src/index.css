@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Kalam:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -15,51 +15,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Handwriting font for headings and navigation */
-.handwriting {
-  font-family: 'Kalam', cursive;
-  font-weight: 400;
-}
-
-/* Notebook texture background */
-.notebook-texture {
-  background-image: 
-    radial-gradient(circle at 1px 1px, rgba(139, 69, 19, 0.15) 1px, transparent 0);
-  background-size: 20px 20px;
-  position: relative;
-}
-
-.notebook-texture::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: 
-    linear-gradient(90deg, transparent 0%, transparent 48%, rgba(139, 69, 19, 0.1) 49%, rgba(139, 69, 19, 0.1) 51%, transparent 52%, transparent 100%),
-    linear-gradient(0deg, transparent 0%, transparent 98%, rgba(139, 69, 19, 0.2) 99%, rgba(139, 69, 19, 0.2) 100%);
-  background-size: 40px 30px, 100% 30px;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Paper texture for cards and navigation */
-.notebook-paper {
-  background-image: 
-    linear-gradient(90deg, transparent 0%, transparent 79px, rgba(139, 69, 19, 0.2) 80px, rgba(139, 69, 19, 0.2) 81px, transparent 82px, transparent 100%),
-    linear-gradient(0deg, transparent 0%, transparent 29px, rgba(139, 69, 19, 0.1) 30px, rgba(139, 69, 19, 0.1) 31px, transparent 32px, transparent 100%);
-  background-size: 100% 32px;
-  position: relative;
-}
-
-/* Vintage active state */
-.vintage-active {
-  box-shadow: 
-    inset 2px 2px 4px rgba(139, 69, 19, 0.2),
-    0 2px 4px rgba(139, 69, 19, 0.1);
-}
-
 /* Dark mode transitions */
 * {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
@@ -67,29 +22,28 @@ body {
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(245, 158, 11, 0.1);
-  border-radius: 4px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(245, 158, 11, 0.4);
-  border-radius: 4px;
+  background: #cbd5e1;
+  border-radius: 3px;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(245, 158, 11, 0.6);
+  background: #475569;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(245, 158, 11, 0.6);
+  background: #94a3b8;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(245, 158, 11, 0.8);
+  background: #64748b;
 }
 
 /* Line clamp utility */
@@ -102,7 +56,7 @@ body {
 
 /* Focus styles */
 .focus-ring {
-  @apply focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-amber-800;
+  @apply focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800;
 }
 
 /* Custom range input styles */
@@ -114,13 +68,13 @@ input[type="range"] {
 }
 
 input[type="range"]::-webkit-slider-track {
-  background: rgba(245, 158, 11, 0.3);
+  background: #e2e8f0;
   height: 8px;
   border-radius: 4px;
 }
 
 .dark input[type="range"]::-webkit-slider-track {
-  background: rgba(245, 158, 11, 0.4);
+  background: #475569;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -129,28 +83,28 @@ input[type="range"]::-webkit-slider-thumb {
   height: 20px;
   width: 20px;
   border-radius: 50%;
-  background: #f59e0b;
+  background: #10b981;
   cursor: pointer;
   border: 2px solid #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 input[type="range"]::-moz-range-track {
-  background: rgba(245, 158, 11, 0.3);
+  background: #e2e8f0;
   height: 8px;
   border-radius: 4px;
   border: none;
 }
 
 .dark input[type="range"]::-moz-range-track {
-  background: rgba(245, 158, 11, 0.4);
+  background: #475569;
 }
 
 input[type="range"]::-moz-range-thumb {
   height: 20px;
   width: 20px;
   border-radius: 50%;
-  background: #f59e0b;
+  background: #10b981;
   cursor: pointer;
   border: 2px solid #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -167,13 +121,13 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .shimmer {
-  background: linear-gradient(90deg, #fef3c7 0px, #fde68a 40px, #fef3c7 80px);
+  background: linear-gradient(90deg, #f1f5f9 0px, #e2e8f0 40px, #f1f5f9 80px);
   background-size: 200px 100%;
   animation: shimmer 1.5s infinite;
 }
 
 .dark .shimmer {
-  background: linear-gradient(90deg, #92400e 0px, #b45309 40px, #92400e 80px);
+  background: linear-gradient(90deg, #334155 0px, #475569 40px, #334155 80px);
   background-size: 200px 100%;
 }
 
@@ -195,89 +149,8 @@ html {
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  background: linear-gradient(135deg, #10b981, #14b8a6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-}
-
-/* Vintage card styling */
-.vintage-card {
-  background: linear-gradient(145deg, #fef3c7, #fde68a);
-  border: 2px solid #f59e0b;
-  box-shadow: 
-    4px 4px 8px rgba(139, 69, 19, 0.2),
-    inset 1px 1px 2px rgba(255, 255, 255, 0.8);
-  position: relative;
-}
-
-.dark .vintage-card {
-  background: linear-gradient(145deg, #92400e, #b45309);
-  border: 2px solid #d97706;
-  box-shadow: 
-    4px 4px 8px rgba(0, 0, 0, 0.3),
-    inset 1px 1px 2px rgba(255, 255, 255, 0.1);
-}
-
-/* Mobile-specific styles */
-@media (max-width: 1024px) {
-  .notebook-texture::before {
-    background-size: 30px 25px, 100% 25px;
-  }
-  
-  .notebook-paper {
-    background-size: 100% 28px;
-  }
-}
-
-/* Touch-friendly button sizing */
-@media (max-width: 768px) {
-  button {
-    min-height: 44px;
-    min-width: 44px;
-  }
-  
-  input, textarea, select {
-    min-height: 44px;
-  }
-}
-
-/* Vintage input styling */
-input, textarea, select {
-  background-image: 
-    linear-gradient(0deg, transparent 0%, transparent 89%, rgba(139, 69, 19, 0.1) 90%, rgba(139, 69, 19, 0.1) 100%);
-  background-size: 100% 20px;
-}
-
-/* Vintage button styling */
-.vintage-btn {
-  background: linear-gradient(145deg, #fbbf24, #f59e0b);
-  border: 1px solid #d97706;
-  box-shadow: 
-    2px 2px 4px rgba(139, 69, 19, 0.2),
-    inset 1px 1px 2px rgba(255, 255, 255, 0.6);
-  transition: all 0.2s ease;
-}
-
-.vintage-btn:hover {
-  background: linear-gradient(145deg, #f59e0b, #d97706);
-  box-shadow: 
-    1px 1px 2px rgba(139, 69, 19, 0.3),
-    inset 1px 1px 2px rgba(255, 255, 255, 0.4);
-  transform: translateY(1px);
-}
-
-.dark .vintage-btn {
-  background: linear-gradient(145deg, #b45309, #92400e);
-  border: 1px solid #78350f;
-  box-shadow: 
-    2px 2px 4px rgba(0, 0, 0, 0.3),
-    inset 1px 1px 2px rgba(255, 255, 255, 0.1);
-}
-
-.dark .vintage-btn:hover {
-  background: linear-gradient(145deg, #92400e, #78350f);
-  box-shadow: 
-    1px 1px 2px rgba(0, 0, 0, 0.4),
-    inset 1px 1px 2px rgba(255, 255, 255, 0.05);
 }
