@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { ArrowLeft, Settings, TrendingUp, Smile, BarChart } from 'lucide-react-native';
 
 export default function AnalyticsScreen() {
   const stats = [
@@ -35,11 +35,11 @@ export default function AnalyticsScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity>
-            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+            <ArrowLeft size={24} color="#ffffff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Analytics</Text>
           <TouchableOpacity>
-            <Ionicons name="settings-outline" size={24} color="#ffffff" />
+            <Settings size={24} color="#ffffff" />
           </TouchableOpacity>
         </View>
 
@@ -67,7 +67,7 @@ export default function AnalyticsScreen() {
                 style={styles.statCard}
               >
                 <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
-                  <Ionicons name={stat.icon} size={24} color={stat.color} />
+                  <BarChart size={24} color={stat.color} />
                 </View>
                 <Text style={styles.statValue}>{stat.value}</Text>
                 <Text style={styles.statLabel}>{stat.label}</Text>
@@ -81,7 +81,7 @@ export default function AnalyticsScreen() {
           >
             <View style={styles.chartHeader}>
               <View style={styles.chartIcon}>
-                <Ionicons name="bar-chart" size={20} color="#4ECDC4" />
+                <BarChart size={20} color="#4ECDC4" />
               </View>
               <Text style={styles.chartTitle}>Daily Activity</Text>
             </View>
@@ -126,13 +126,13 @@ export default function AnalyticsScreen() {
           >
             <Text style={styles.insightsTitle}>Insights</Text>
             <View style={styles.insightItem}>
-              <Ionicons name="trending-up" size={20} color="#4ECDC4" />
+              <TrendingUp size={20} color="#4ECDC4" />
               <Text style={styles.insightText}>
                 Your meditation streak is at an all-time high! Keep it up.
               </Text>
             </View>
             <View style={styles.insightItem}>
-              <Ionicons name="happy" size={20} color="#FFD93D" />
+              <Smile size={20} color="#FFD93D" />
               <Text style={styles.insightText}>
                 Your mood has improved 15% this week compared to last week.
               </Text>

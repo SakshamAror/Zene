@@ -8,21 +8,23 @@ import {
   Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { ArrowLeft, Settings, Play, Pause, RotateCcw } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
-export default function MeditateScreen() {
-  const [duration, setDuration] = useState(300); // 5 minutes
-  const [timeLeft, setTimeLeft] = useState(duration);
+export default function WorkScreen() {
+  const [workDuration, setWorkDuration] = useState(1500); // 25 minutes
+  const [breakDuration, setBreakDuration] = useState(300); // 5 minutes
+  const [timeLeft, setTimeLeft] = useState(workDuration);
   const [isActive, setIsActive] = useState(false);
+  const [isWorkSession, setIsWorkSession] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  const durations = [
-    { label: '5 min', value: 300 },
-    { label: '10 min', value: 600 },
+  const workDurations = [
     { label: '15 min', value: 900 },
-    { label: '20 min', value: 1200 },
+    { label: '25 min', value: 1500 },
+    { label: '45 min', value: 2700 },
+    { label: '60 min', value: 3600 },
   ];
 
   useEffect(() => {
@@ -45,9 +47,9 @@ export default function MeditateScreen() {
   }, [isActive, timeLeft]);
 
   useEffect(() => {
-    setTimeLeft(duration);
+    setTimeLeft(isWorkSession ? workDuration : breakDuration);
     setIsCompleted(false);
-  }, [duration]);
+  }, [workDuration, breakDuration, isWorkSession]);
 
   const toggleTimer = () => {
     setIsActive(!isActive);
@@ -55,7 +57,13 @@ export default function MeditateScreen() {
 
   const resetTimer = () => {
     setIsActive(false);
-    setTimeLeft(duration);
+    setTimeLeft(isWorkSession ? workDuration : breakDuration);
+    setIsCompleted(false);
+  };
+
+  const switchSession = () => {
+    setIsWorkSession(!isWorkSession);
+    setIsActive(false);
     setIsCompleted(false);
   };
 
@@ -65,27 +73,58 @@ export default function MeditateScreen() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const progress = ((duration - timeLeft) / duration) * 100;
-
   return (
     <LinearGradient colors={['#000000', '#1a1a1a']} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity>
-            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+            <ArrowLeft size={24} color="#ffffff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Meditation</Text>
+          <Text style={styles.headerTitle}>Focus Timer</Text>
           <TouchableOpacity>
-            <Ionicons name="settings-outline" size={24} color="#ffffff" />
+            <Settings size={24} color="#ffffff" />
           </TouchableOpacity>
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.subtitle}>Find your center and breathe</Text>
+          <Text style={styles.subtitle}>
+            {isWorkSession ? 'Time to focus and be productive' : 'Take a well-deserved break'}
+          </Text>
+
+          <View style={styles.sessionToggle}>
+            <TouchableOpacity
+              onPress={() => setIsWorkSession(true)}
+              style={[
+                styles.sessionButton,
+                isWorkSession && styles.sessionButtonActive
+              ]}
+            >
+              <Text style={[
+                styles.sessionButtonText,
+                isWorkSession && styles.sessionButtonTextActive
+              ]}>
+                Work
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setIsWorkSession(false)}
+              style={[
+                styles.sessionButton,
+                !isWorkSession && styles.sessionButtonActive
+              ]}
+            >
+              <Text style={[
+                styles.sessionButtonText,
+                !isWorkSession && styles.sessionButtonTextActive
+              ]}>
+                Break
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.timerContainer}>
             <LinearGradient
-              colors={['#4ECDC4', '#44A08D']}
+              colors={isWorkSession ? ['#FF6B6B', '#FF8E53'] : ['#4ECDC4', '#44A08D']}
               style={styles.timerCircle}
             >
               <View style={styles.timerInner}>
@@ -102,58 +141,45 @@ export default function MeditateScreen() {
               onPress={toggleTimer}
               style={[styles.controlButton, styles.playButton]}
             >
-              <Ionicons 
-                name={isActive ? 'pause' : 'play'} 
-                size={32} 
-                color="#ffffff" 
-              />
+              {isActive ? (
+                <Pause size={32} color="#ffffff" />
+              ) : (
+                <Play size={32} color="#ffffff" />
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               onPress={resetTimer}
               style={[styles.controlButton, styles.resetButton]}
             >
-              <Ionicons name="refresh" size={24} color="#ffffff" />
+              <RotateCcw size={24} color="#ffffff" />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.durationContainer}>
-            <Text style={styles.sectionTitle}>Duration</Text>
-            <View style={styles.durationButtons}>
-              {durations.map((dur) => (
-                <TouchableOpacity
-                  key={dur.value}
-                  onPress={() => setDuration(dur.value)}
-                  style={[
-                    styles.durationButton,
-                    duration === dur.value && styles.durationButtonActive
-                  ]}
-                  disabled={isActive}
-                >
-                  <Text style={[
-                    styles.durationButtonText,
-                    duration === dur.value && styles.durationButtonTextActive
-                  ]}>
-                    {dur.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          {isWorkSession && (
+            <View style={styles.durationContainer}>
+              <Text style={styles.sectionTitle}>Work Duration</Text>
+              <View style={styles.durationButtons}>
+                {workDurations.map((dur) => (
+                  <TouchableOpacity
+                    key={dur.value}
+                    onPress={() => setWorkDuration(dur.value)}
+                    style={[
+                      styles.durationButton,
+                      workDuration === dur.value && styles.durationButtonActive
+                    ]}
+                    disabled={isActive}
+                  >
+                    <Text style={[
+                      styles.durationButtonText,
+                      workDuration === dur.value && styles.durationButtonTextActive
+                    ]}>
+                      {dur.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-          </View>
-
-          <View style={styles.ambientContainer}>
-            <Text style={styles.sectionTitle}>Ambient Sounds</Text>
-            <View style={styles.ambientButtons}>
-              <TouchableOpacity style={styles.ambientButton}>
-                <Text style={styles.ambientButtonText}>None</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.ambientButton}>
-                <Text style={styles.ambientButtonText}>Rain</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.ambientButton}>
-                <Text style={styles.ambientButtonText}>Ocean</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          )}
         </View>
       </SafeAreaView>
     </LinearGradient>
@@ -188,7 +214,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#888888',
     textAlign: 'center',
+    marginBottom: 30,
+  },
+  sessionToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#333333',
+    borderRadius: 12,
+    padding: 4,
     marginBottom: 40,
+  },
+  sessionButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  sessionButtonActive: {
+    backgroundColor: '#FF6B6B',
+  },
+  sessionButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  sessionButtonTextActive: {
+    color: '#000000',
   },
   timerContainer: {
     alignItems: 'center',
@@ -234,7 +284,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   playButton: {
-    backgroundColor: '#4ECDC4',
+    backgroundColor: '#FF6B6B',
   },
   resetButton: {
     backgroundColor: '#333333',
@@ -261,7 +311,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   durationButtonActive: {
-    backgroundColor: '#4ECDC4',
+    backgroundColor: '#FF6B6B',
   },
   durationButtonText: {
     color: '#ffffff',
@@ -270,25 +320,5 @@ const styles = StyleSheet.create({
   },
   durationButtonTextActive: {
     color: '#000000',
-  },
-  ambientContainer: {
-    marginBottom: 30,
-  },
-  ambientButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  ambientButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#333333',
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  ambientButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500',
   },
 });

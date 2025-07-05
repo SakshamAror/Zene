@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { ArrowLeft, Calendar, BookOpen } from 'lucide-react-native';
 
 export default function JournalScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -36,11 +36,11 @@ export default function JournalScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity>
-            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+            <ArrowLeft size={24} color="#ffffff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Journal</Text>
           <TouchableOpacity>
-            <Ionicons name="calendar-outline" size={24} color="#ffffff" />
+            <Calendar size={24} color="#ffffff" />
           </TouchableOpacity>
         </View>
 
@@ -56,7 +56,7 @@ export default function JournalScreen() {
             >
               <View style={styles.journalHeader}>
                 <View style={styles.journalIcon}>
-                  <Ionicons name="book" size={20} color="#FFD93D" />
+                  <BookOpen size={20} color="#FFD93D" />
                 </View>
                 <Text style={styles.journalTitle}>Today's Entry</Text>
                 <TouchableOpacity style={styles.saveButton}>
