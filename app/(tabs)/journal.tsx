@@ -32,7 +32,7 @@ export default function JournalScreen() {
         journalService.getRecentJournalEntries(5)
       ]);
 
-      setContent(todayEntry?.content || '');
+      setContent(todayEntry?.log || '');
       setRecentEntries(recent);
     } catch (error: any) {
       Alert.alert('Error', 'Failed to load journal data: ' + error.message);
@@ -153,7 +153,7 @@ export default function JournalScreen() {
                     </Text>
                   </View>
                   <Text style={styles.entryPreview} numberOfLines={3}>
-                    {entry.content}
+                    {entry.log}
                   </Text>
                 </TouchableOpacity>
               ))

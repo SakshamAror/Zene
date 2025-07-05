@@ -5,21 +5,21 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
-          duration: number;
+          length: number;
           date: string;
           created_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
-          duration: number;
+          length: number;
           date: string;
           created_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
-          duration?: number;
+          length?: number;
           date?: string;
           created_at?: string;
         };
@@ -28,24 +28,21 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
-          duration: number;
-          session_type: 'work' | 'break';
+          length: number;
           date: string;
           created_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
-          duration: number;
-          session_type: 'work' | 'break';
+          length: number;
           date: string;
           created_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
-          duration?: number;
-          session_type?: 'work' | 'break';
+          length?: number;
           date?: string;
           created_at?: string;
         };
@@ -54,21 +51,21 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
-          content: string;
+          log: string;
           date: string;
           created_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
-          content: string;
+          log: string;
           date: string;
           created_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
-          content?: string;
+          log?: string;
           date?: string;
           created_at?: string;
         };
@@ -77,8 +74,7 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
-          title: string;
-          description: string | null;
+          goal: string;
           completed: boolean;
           date_created: string;
           created_at: string;
@@ -86,8 +82,7 @@ export interface Database {
         Insert: {
           id?: string;
           user_id: string;
-          title: string;
-          description?: string | null;
+          goal: string;
           completed?: boolean;
           date_created?: string;
           created_at?: string;
@@ -95,8 +90,7 @@ export interface Database {
         Update: {
           id?: string;
           user_id?: string;
-          title?: string;
-          description?: string | null;
+          goal?: string;
           completed?: boolean;
           date_created?: string;
           created_at?: string;
@@ -107,16 +101,19 @@ export interface Database {
           id: string;
           title: string;
           summary: string;
+          category: string;
         };
         Insert: {
           id?: string;
           title: string;
           summary: string;
+          category?: string;
         };
         Update: {
           id?: string;
           title?: string;
           summary?: string;
+          category?: string;
         };
       };
       user_book_status: {

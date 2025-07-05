@@ -2,8 +2,7 @@ import { supabase } from '@/lib/supabase';
 
 export interface WorkSession {
   id: string;
-  duration: number;
-  session_type: 'work' | 'break';
+  length: number;
   date: string;
   created_at: string;
 }
@@ -19,8 +18,7 @@ export const workService = {
       .from('work_sessions')
       .insert({
         user_id: user.id,
-        duration,
-        session_type: sessionType,
+        length: duration,
         date: today,
       });
 
@@ -37,7 +35,7 @@ export const workService = {
 
     const { data, error } = await supabase
       .from('work_sessions')
-      .select('id, duration, session_type, date, created_at')
+      .select('id, length, date, created_at')
       .eq('user_id', user.id)
       .gte('date', startDateStr)
       .order('date', { ascending: true });
@@ -48,8 +46,6 @@ export const workService = {
 
   async getTotalWorkTime(days: number = 7): Promise<number> {
     const sessions = await this.getWorkSessions(days);
-    return sessions
-      .filter(session => session.session_type === 'work')
-      .reduce((total, session) => total + session.duration, 0);
+    return sessions.reduce((total, session) => total + session.length, 0);
   }
 };

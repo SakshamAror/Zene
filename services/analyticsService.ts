@@ -50,11 +50,11 @@ export const analyticsService = {
       
       const dayMeditation = meditationSessions
         .filter(session => session.date === dateStr)
-        .reduce((total, session) => total + session.duration, 0);
+        .reduce((total, session) => total + session.length, 0);
       
       const dayWork = workSessions
-        .filter(session => session.date === dateStr && session.session_type === 'work')
-        .reduce((total, session) => total + session.duration, 0);
+        .filter(session => session.date === dateStr)
+        .reduce((total, session) => total + session.length, 0);
       
       const hasJournal = journalEntries.some(entry => entry.date === dateStr);
       

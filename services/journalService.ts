@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 
 export interface JournalEntry {
   id: string;
-  content: string;
+  log: string;
   date: string;
   created_at: string;
 }
@@ -18,7 +18,7 @@ export const journalService = {
       .from('journal_logs')
       .upsert({
         user_id: user.id,
-        content,
+        log: content,
         date: entryDate,
       }, {
         onConflict: 'user_id,date'
@@ -33,7 +33,7 @@ export const journalService = {
 
     const { data, error } = await supabase
       .from('journal_logs')
-      .select('id, content, date, created_at')
+      .select('id, log, date, created_at')
       .eq('user_id', user.id)
       .eq('date', date)
       .single();
@@ -48,7 +48,7 @@ export const journalService = {
 
     const { data, error } = await supabase
       .from('journal_logs')
-      .select('id, content, date, created_at')
+      .select('id, log, date, created_at')
       .eq('user_id', user.id)
       .order('date', { ascending: false })
       .limit(limit);

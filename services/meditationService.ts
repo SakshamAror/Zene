@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 
 export interface MeditationSession {
   id: string;
-  duration: number;
+  length: number;
   date: string;
   created_at: string;
 }
@@ -18,7 +18,7 @@ export const meditationService = {
       .from('meditation_sessions')
       .insert({
         user_id: user.id,
-        duration,
+        length: duration,
         date: today,
       });
 
@@ -35,7 +35,7 @@ export const meditationService = {
 
     const { data, error } = await supabase
       .from('meditation_sessions')
-      .select('id, duration, date, created_at')
+      .select('id, length, date, created_at')
       .eq('user_id', user.id)
       .gte('date', startDateStr)
       .order('date', { ascending: true });
@@ -46,7 +46,7 @@ export const meditationService = {
 
   async getTotalMeditationTime(days: number = 7): Promise<number> {
     const sessions = await this.getMeditationSessions(days);
-    return sessions.reduce((total, session) => total + session.duration, 0);
+    return sessions.reduce((total, session) => total + session.length, 0);
   },
 
   async getMeditationStreak(): Promise<number> {
