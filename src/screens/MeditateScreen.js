@@ -6,11 +6,9 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Dimensions,
-  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Settings, Play, Pause, RotateCcw } from 'lucide-react-native';
-import { meditationService } from '@/services/meditationService';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -19,7 +17,6 @@ export default function MeditateScreen() {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [isActive, setIsActive] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   const durations = [
     { label: '5 min', value: 300 },
@@ -36,7 +33,6 @@ export default function MeditateScreen() {
           if (time <= 1) {
             setIsActive(false);
             setIsCompleted(true);
-            handleSessionComplete();
             return 0;
           }
           return time - 1;
@@ -52,18 +48,6 @@ export default function MeditateScreen() {
     setTimeLeft(duration);
     setIsCompleted(false);
   }, [duration]);
-
-  const handleSessionComplete = async () => {
-    setIsSaving(true);
-    try {
-      await meditationService.saveMeditationSession(duration);
-      Alert.alert('Great job!', 'Your meditation session has been saved.');
-    } catch (error: any) {
-      Alert.alert('Error', 'Failed to save meditation session: ' + error.message);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const toggleTimer = () => {
     setIsActive(!isActive);
@@ -81,16 +65,18 @@ export default function MeditateScreen() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const progress = ((duration - timeLeft) / duration) * 100;
+
   return (
     <LinearGradient colors={['#000000', '#1a1a1a']} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity>
-            <ArrowLeft size={24} color="#ffffff" />
+            <Ionicons name="arrow-back" size={24} color="#ffffff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Meditation</Text>
           <TouchableOpacity>
-            <Settings size={24} color="#ffffff" />
+            <Ionicons name="settings-outline" size={24} color="#ffffff" />
           </TouchableOpacity>
         </View>
 
@@ -105,9 +91,7 @@ export default function MeditateScreen() {
               <View style={styles.timerInner}>
                 <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
                 {isCompleted && (
-                  <Text style={styles.completedText}>
-                    {isSaving ? 'Saving...' : 'Complete!'}
-                  </Text>
+                  <Text style={styles.completedText}>Complete!</Text>
                 )}
               </View>
             </LinearGradient>
@@ -117,19 +101,18 @@ export default function MeditateScreen() {
             <TouchableOpacity
               onPress={toggleTimer}
               style={[styles.controlButton, styles.playButton]}
-              disabled={isCompleted}
             >
-              {isActive ? (
-                <Pause size={32} color="#ffffff" />
-              ) : (
-                <Play size={32} color="#ffffff" />
-              )}
+              <Ionicons 
+                name={isActive ? 'pause' : 'play'} 
+                size={32} 
+                color="#ffffff" 
+              />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={resetTimer}
               style={[styles.controlButton, styles.resetButton]}
             >
-              <RotateCcw size={24} color="#ffffff" />
+              <Ionicons name="refresh" size={24} color="#ffffff" />
             </TouchableOpacity>
           </View>
 
