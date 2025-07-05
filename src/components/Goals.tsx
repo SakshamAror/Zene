@@ -56,7 +56,7 @@ export default function Goals({ userId }: GoalsProps) {
   const handleToggleGoal = async (goalId: number, completed: boolean) => {
     try {
       await updateGoal(goalId, { completed: !completed });
-      setGoals(prev => prev.map(goal => 
+      setGoals(prev => prev.map(goal =>
         goal.id === goalId ? { ...goal, completed: !completed } : goal
       ));
     } catch (error) {

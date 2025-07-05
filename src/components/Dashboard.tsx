@@ -58,23 +58,23 @@ export default function Dashboard({ userId }: DashboardProps) {
   const calculateStreak = (meditations: MeditationSession[], workSessions: WorkSession[], journals: JournalLog[]) => {
     const today = new Date();
     let streak = 0;
-    
+
     for (let i = 0; i < 30; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
-      
+
       const hasActivity = meditations.some(m => m.date === dateStr) ||
-                         workSessions.some(w => w.date === dateStr) ||
-                         journals.some(j => j.date === dateStr);
-      
+        workSessions.some(w => w.date === dateStr) ||
+        journals.some(j => j.date === dateStr);
+
       if (hasActivity) {
         streak++;
       } else if (i > 0) {
         break;
       }
     }
-    
+
     return streak;
   };
 

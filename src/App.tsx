@@ -2,15 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
 import AuthForm from './components/AuthForm.tsx';
 import Dashboard from './components/Dashboard.tsx';
-import MeditationTimer from './components/MeditationTimer.tsx';
-import WorkTimer from './components/WorkTimer.tsx';
+import Timers from './components/Timers.tsx';
 import Goals from './components/Goals.tsx';
 import Journal from './components/Journal.tsx';
 import Learn from './components/Learn.tsx';
 import Analytics from './components/Analytics.tsx';
 import { Home, Clock, Target, BookOpen, PenTool, BarChart3, LogOut, Moon, Sun } from 'lucide-react';
 
-type View = 'dashboard' | 'meditation' | 'work' | 'goals' | 'journal' | 'learn' | 'analytics';
+type View = 'dashboard' | 'timers' | 'goals' | 'journal' | 'learn' | 'analytics';
 
 function App() {
   const { user, loading, signOut } = useAuth();
@@ -48,13 +47,12 @@ function App() {
   }
 
   if (!user) {
-    return <AuthForm onAuthSuccess={() => {}} />;
+    return <AuthForm onAuthSuccess={() => { }} />;
   }
 
   const navigationItems = [
     { id: 'dashboard', label: 'Home', icon: Home },
-    { id: 'meditation', label: 'Meditate', icon: Clock },
-    { id: 'work', label: 'Focus', icon: Target },
+    { id: 'timers', label: 'Timers', icon: Clock },
     { id: 'goals', label: 'Goals', icon: Target },
     { id: 'journal', label: 'Journal', icon: PenTool },
     { id: 'learn', label: 'Learn', icon: BookOpen },
@@ -65,10 +63,8 @@ function App() {
     switch (currentView) {
       case 'dashboard':
         return <Dashboard userId={user.id} />;
-      case 'meditation':
-        return <MeditationTimer userId={user.id} />;
-      case 'work':
-        return <WorkTimer userId={user.id} />;
+      case 'timers':
+        return <Timers userId={user.id} />;
       case 'goals':
         return <Goals userId={user.id} />;
       case 'journal':
@@ -94,7 +90,7 @@ function App() {
               </div>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white">Zene</h1>
             </div>
-            
+
             <div className="flex items-center space-x-3">
               <button
                 onClick={toggleDarkMode}
@@ -113,39 +109,38 @@ function App() {
         </div>
       </header>
 
-      <div className="flex">
-        {/* Sidebar Navigation */}
-        <nav className="w-64 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-r border-slate-200 dark:border-slate-700 min-h-[calc(100vh-4rem)] p-4">
-          <div className="space-y-2">
+      {/* Main Content */}
+      <main className="flex-1 p-6 pb-24">
+        <div className="max-w-6xl mx-auto">
+          {renderCurrentView()}
+        </div>
+      </main>
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-around py-2">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
-              
+
               return (
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id as View)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
-                    isActive
-                      ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
+                  className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-xl transition-all duration-200 ${isActive
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    }`}
                 >
                   <Icon size={20} />
-                  <span className="font-medium">{item.label}</span>
+                  <span className="text-xs font-medium">{item.label}</span>
                 </button>
               );
             })}
           </div>
-        </nav>
-
-        {/* Main Content */}
-        <main className="flex-1 p-6">
-          <div className="max-w-6xl mx-auto">
-            {renderCurrentView()}
-          </div>
-        </main>
-      </div>
+        </div>
+      </nav>
     </div>
   );
 }

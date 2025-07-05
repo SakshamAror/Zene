@@ -46,12 +46,12 @@ export default function Journal({ userId }: JournalProps) {
       };
 
       await saveJournalLog(logData);
-      
+
       // Update local state
       setJournalLogs(prev => {
         const existing = prev.find(log => log.date === selectedDate);
         if (existing) {
-          return prev.map(log => 
+          return prev.map(log =>
             log.date === selectedDate ? { ...log, log: content } : log
           );
         } else {
@@ -119,7 +119,7 @@ export default function Journal({ userId }: JournalProps) {
               >
                 <ChevronLeft size={20} />
               </button>
-              
+
               <div className="text-center">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                   {formatDate(selectedDate)}
@@ -131,7 +131,7 @@ export default function Journal({ userId }: JournalProps) {
                   className="mt-2 px-3 py-1 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-300"
                 />
               </div>
-              
+
               <button
                 onClick={() => navigateDate('next')}
                 disabled={selectedDate >= new Date().toISOString().split('T')[0]}
@@ -153,7 +153,7 @@ export default function Journal({ userId }: JournalProps) {
                   Today's Entry
                 </h3>
               </div>
-              
+
               <button
                 onClick={handleSave}
                 disabled={saving}
@@ -172,7 +172,6 @@ export default function Journal({ userId }: JournalProps) {
               onChange={(e) => setContent(e.target.value)}
               placeholder="How are you feeling today? What's on your mind? What are you grateful for?"
               className="w-full h-64 p-4 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
-              style={{ fontFamily: 'Crimson Text, serif', lineHeight: '1.6' }}
             />
           </div>
         </div>
@@ -195,11 +194,10 @@ export default function Journal({ userId }: JournalProps) {
                   <button
                     key={log.id}
                     onClick={() => setSelectedDate(log.date)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
-                      selectedDate === log.date
-                        ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800'
-                        : 'bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700'
-                    }`}
+                    className={`w-full text-left p-3 rounded-lg transition-colors ${selectedDate === log.date
+                      ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800'
+                      : 'bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
                   >
                     <div className="text-sm font-medium text-slate-900 dark:text-white mb-1">
                       {new Date(log.date).toLocaleDateString('en-US', {

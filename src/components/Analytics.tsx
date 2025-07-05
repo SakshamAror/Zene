@@ -54,7 +54,7 @@ export default function Analytics({ userId }: AnalyticsProps) {
 
   const calculateStats = () => {
     const filtered = getFilteredData();
-    
+
     const totalMeditationTime = filtered.meditations.reduce((sum, m) => sum + m.length, 0);
     const totalWorkTime = filtered.workSessions.reduce((sum, w) => sum + w.length, 0);
     const journalEntries = filtered.journals.length;
@@ -66,11 +66,11 @@ export default function Analytics({ userId }: AnalyticsProps) {
       totalWorkTime: Math.round(totalWorkTime / 60),
       journalEntries,
       goalCompletionRate: totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0,
-      averageMeditationLength: filtered.meditations.length > 0 
-        ? Math.round(totalMeditationTime / filtered.meditations.length / 60) 
+      averageMeditationLength: filtered.meditations.length > 0
+        ? Math.round(totalMeditationTime / filtered.meditations.length / 60)
         : 0,
-      averageWorkLength: filtered.workSessions.length > 0 
-        ? Math.round(totalWorkTime / filtered.workSessions.length / 60) 
+      averageWorkLength: filtered.workSessions.length > 0
+        ? Math.round(totalWorkTime / filtered.workSessions.length / 60)
         : 0,
     };
   };
@@ -240,9 +240,8 @@ export default function Analytics({ userId }: AnalyticsProps) {
                     }}
                   ></div>
                   <div
-                    className={`w-full h-1 rounded-sm ${
-                      day.hasJournal ? 'bg-purple-500' : 'bg-slate-200 dark:bg-slate-700'
-                    }`}
+                    className={`w-full h-1 rounded-sm ${day.hasJournal ? 'bg-purple-500' : 'bg-slate-200 dark:bg-slate-700'
+                      }`}
                   ></div>
                 </div>
               </div>
