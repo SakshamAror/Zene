@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,57 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Calendar, BookOpen } from 'lucide-react-native';
+import { journalService, JournalEntry } from '@/services/journalService';
 
 export default function JournalScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [content, setContent] = useState('');
+  const [recentEntries, setRecentEntries] = useState<JournalEntry[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadJournalData();
+  }, [selectedDate]);
+
+  const loadJournalData = async () => {
+    setIsLoading(true);
+    try {
+      const [todayEntry, recent] = await Promise.all([
+        journalService.getJournalEntry(selectedDate),
+        journalService.getRecentJournalEntries(5)
+      ]);
+
+      setContent(todayEntry?.content || '');
+      setRecentEntries(recent);
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to load journal data: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!content.trim()) {
+      Alert.alert('Error', 'Please write something before saving.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await journalService.saveJournalEntry(content, selectedDate);
+      Alert.alert('Success', 'Journal entry saved!');
+      loadJournalData(); // Refresh recent entries
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to save journal entry: ' + error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
@@ -25,11 +69,25 @@ export default function JournalScreen() {
     });
   };
 
-  const recentEntries = [
-    { date: '2024-01-15', preview: 'Had a great meditation session this morning...' },
-    { date: '2024-01-14', preview: 'Feeling grateful for the small moments today...' },
-    { date: '2024-01-13', preview: 'Challenging day but found peace in breathing...' },
-  ];
+  const formatEntryDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <LinearGradient colors={['#000000', '#1a1a1a']} style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading...</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
 
   return (
     <LinearGradient colors={['#000000', '#1a1a1a']} style={styles.container}>
@@ -59,8 +117,14 @@ export default function JournalScreen() {
                   <BookOpen size={20} color="#FFD93D" />
                 </View>
                 <Text style={styles.journalTitle}>Today's Entry</Text>
-                <TouchableOpacity style={styles.saveButton}>
-                  <Text style={styles.saveButtonText}>Save</Text>
+                <TouchableOpacity 
+                  style={styles.saveButton}
+                  onPress={handleSave}
+                  disabled={isSaving}
+                >
+                  <Text style={styles.saveButtonText}>
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </Text>
                 </TouchableOpacity>
               </View>
 
@@ -78,19 +142,22 @@ export default function JournalScreen() {
 
           <View style={styles.recentContainer}>
             <Text style={styles.sectionTitle}>Recent Entries</Text>
-            {recentEntries.map((entry, index) => (
-              <TouchableOpacity key={index} style={styles.entryCard}>
-                <View style={styles.entryHeader}>
-                  <Text style={styles.entryDate}>
-                    {new Date(entry.date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+            {recentEntries.length === 0 ? (
+              <Text style={styles.emptyText}>No recent entries yet. Start writing!</Text>
+            ) : (
+              recentEntries.map((entry, index) => (
+                <TouchableOpacity key={entry.id} style={styles.entryCard}>
+                  <View style={styles.entryHeader}>
+                    <Text style={styles.entryDate}>
+                      {formatEntryDate(entry.date)}
+                    </Text>
+                  </View>
+                  <Text style={styles.entryPreview} numberOfLines={3}>
+                    {entry.content}
                   </Text>
-                </View>
-                <Text style={styles.entryPreview}>{entry.preview}</Text>
-              </TouchableOpacity>
-            ))}
+                </TouchableOpacity>
+              ))
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -104,6 +171,15 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#ffffff',
+    fontSize: 18,
   },
   header: {
     flexDirection: 'row',
@@ -184,6 +260,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
     marginBottom: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   entryCard: {
     backgroundColor: '#333333',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,29 +6,73 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Settings, TrendingUp, Smile, ChartBar as BarChart } from 'lucide-react-native';
+import { analyticsService, WeeklyAnalytics } from '@/services/analyticsService';
 
 export default function AnalyticsScreen() {
+  const [analytics, setAnalytics] = useState<WeeklyAnalytics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedPeriod, setSelectedPeriod] = useState('7d');
+
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
+
+  const loadAnalytics = async () => {
+    setIsLoading(true);
+    try {
+      const data = await analyticsService.getWeeklyAnalytics();
+      setAnalytics(data);
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to load analytics: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading || !analytics) {
+    return (
+      <LinearGradient colors={['#000000', '#1a1a1a']} style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading analytics...</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
+
   const stats = [
-    { label: 'Minutes Meditated', value: '245', icon: 'leaf', color: '#4ECDC4' },
-    { label: 'Journal Entries', value: '12', icon: 'book', color: '#FFD93D' },
-    { label: 'Day Streak', value: '7', icon: 'flame', color: '#FF6B6B' },
-    { label: 'Mood Score', value: '8.2', icon: 'happy', color: '#667eea' },
+    { 
+      label: 'Minutes Meditated', 
+      value: analytics.totalMeditation.toString(), 
+      icon: 'leaf', 
+      color: '#4ECDC4' 
+    },
+    { 
+      label: 'Journal Entries', 
+      value: analytics.journalEntries.toString(), 
+      icon: 'book', 
+      color: '#FFD93D' 
+    },
+    { 
+      label: 'Day Streak', 
+      value: analytics.streak.toString(), 
+      icon: 'flame', 
+      color: '#FF6B6B' 
+    },
+    { 
+      label: 'Avg Mood Score', 
+      value: analytics.averageMood > 0 ? analytics.averageMood.toFixed(1) : 'N/A', 
+      icon: 'happy', 
+      color: '#667eea' 
+    },
   ];
 
-  const weeklyData = [
-    { day: 'Mon', meditation: 15, mood: 7 },
-    { day: 'Tue', meditation: 20, mood: 8 },
-    { day: 'Wed', meditation: 10, mood: 6 },
-    { day: 'Thu', meditation: 25, mood: 9 },
-    { day: 'Fri', meditation: 15, mood: 7 },
-    { day: 'Sat', meditation: 30, mood: 9 },
-    { day: 'Sun', meditation: 20, mood: 8 },
-  ];
-
-  const maxMeditation = Math.max(...weeklyData.map(d => d.meditation));
+  const maxMeditation = Math.max(...analytics.dailyStats.map(d => d.meditation), 1);
 
   return (
     <LinearGradient colors={['#000000', '#1a1a1a']} style={styles.container}>
@@ -38,7 +82,7 @@ export default function AnalyticsScreen() {
             <ArrowLeft size={24} color="#ffffff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Analytics</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={loadAnalytics}>
             <Settings size={24} color="#ffffff" />
           </TouchableOpacity>
         </View>
@@ -89,29 +133,31 @@ export default function AnalyticsScreen() {
             <View style={styles.legendContainer}>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: '#4ECDC4' }]} />
-                <Text style={styles.legendText}>Meditation</Text>
+                <Text style={styles.legendText}>Meditation (min)</Text>
               </View>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: '#FFD93D' }]} />
-                <Text style={styles.legendText}>Mood</Text>
+                <Text style={styles.legendText}>Journal</Text>
               </View>
             </View>
 
             <View style={styles.chartContent}>
-              {weeklyData.map((day, index) => (
+              {analytics.dailyStats.map((day, index) => (
                 <View key={index} style={styles.chartBar}>
-                  <Text style={styles.dayLabel}>{day.day}</Text>
+                  <Text style={styles.dayLabel}>
+                    {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
+                  </Text>
                   <View style={styles.barContainer}>
                     <View
                       style={[
                         styles.meditationBar,
-                        { height: (day.meditation / maxMeditation) * 60 }
+                        { height: Math.max((day.meditation / maxMeditation) * 60, 4) }
                       ]}
                     />
                     <View
                       style={[
-                        styles.moodBar,
-                        { height: (day.mood / 10) * 60 }
+                        styles.journalBar,
+                        { height: day.hasJournal ? 20 : 4 }
                       ]}
                     />
                   </View>
@@ -128,13 +174,19 @@ export default function AnalyticsScreen() {
             <View style={styles.insightItem}>
               <TrendingUp size={20} color="#4ECDC4" />
               <Text style={styles.insightText}>
-                Your meditation streak is at an all-time high! Keep it up.
+                {analytics.streak > 0 
+                  ? `Great job! You're on a ${analytics.streak}-day meditation streak.`
+                  : 'Start a meditation practice to build your streak!'
+                }
               </Text>
             </View>
             <View style={styles.insightItem}>
               <Smile size={20} color="#FFD93D" />
               <Text style={styles.insightText}>
-                Your mood has improved 15% this week compared to last week.
+                {analytics.journalEntries > 0
+                  ? `You've written ${analytics.journalEntries} journal entries this week.`
+                  : 'Try writing in your journal to track your thoughts and feelings.'
+                }
               </Text>
             </View>
           </LinearGradient>
@@ -150,6 +202,15 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#ffffff',
+    fontSize: 18,
   },
   header: {
     flexDirection: 'row',
@@ -300,7 +361,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     minHeight: 4,
   },
-  moodBar: {
+  journalBar: {
     width: 8,
     backgroundColor: '#FFD93D',
     borderRadius: 4,

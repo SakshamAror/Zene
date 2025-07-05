@@ -6,9 +6,11 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Settings, Play, Pause, RotateCcw } from 'lucide-react-native';
+import { workService } from '@/services/workService';
 
 const { width } = Dimensions.get('window');
 
@@ -19,6 +21,7 @@ export default function WorkScreen() {
   const [isActive, setIsActive] = useState(false);
   const [isWorkSession, setIsWorkSession] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const workDurations = [
     { label: '15 min', value: 900 },
@@ -35,6 +38,7 @@ export default function WorkScreen() {
           if (time <= 1) {
             setIsActive(false);
             setIsCompleted(true);
+            handleSessionComplete();
             return 0;
           }
           return time - 1;
@@ -50,6 +54,22 @@ export default function WorkScreen() {
     setTimeLeft(isWorkSession ? workDuration : breakDuration);
     setIsCompleted(false);
   }, [workDuration, breakDuration, isWorkSession]);
+
+  const handleSessionComplete = async () => {
+    setIsSaving(true);
+    try {
+      const duration = isWorkSession ? workDuration : breakDuration;
+      await workService.saveWorkSession(duration, isWorkSession ? 'work' : 'break');
+      Alert.alert(
+        'Session Complete!', 
+        `Your ${isWorkSession ? 'work' : 'break'} session has been saved.`
+      );
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to save session: ' + error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const toggleTimer = () => {
     setIsActive(!isActive);
@@ -130,7 +150,9 @@ export default function WorkScreen() {
               <View style={styles.timerInner}>
                 <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
                 {isCompleted && (
-                  <Text style={styles.completedText}>Complete!</Text>
+                  <Text style={styles.completedText}>
+                    {isSaving ? 'Saving...' : 'Complete!'}
+                  </Text>
                 )}
               </View>
             </LinearGradient>
@@ -140,6 +162,7 @@ export default function WorkScreen() {
             <TouchableOpacity
               onPress={toggleTimer}
               style={[styles.controlButton, styles.playButton]}
+              disabled={isCompleted}
             >
               {isActive ? (
                 <Pause size={32} color="#ffffff" />
