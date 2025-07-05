@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Settings, TrendingUp, Smile, BarChart } from 'lucide-react-native';
+import { ArrowLeft, Settings, TrendingUp, Smile, ChartBar as BarChart } from 'lucide-react-native';
 
 export default function AnalyticsScreen() {
   const stats = [
