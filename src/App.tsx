@@ -7,7 +7,7 @@ import Goals from './components/Goals.tsx';
 import Journal from './components/Journal.tsx';
 import Learn from './components/Learn.tsx';
 import Analytics from './components/Analytics.tsx';
-import { Home, Clock, Target, BookOpen, PenTool, BarChart3, LogOut, Moon, Sun } from 'lucide-react';
+import { Home, Clock, Target, BookOpen, PenTool, BarChart3 } from 'lucide-react';
 
 type View = 'dashboard' | 'timers' | 'goals' | 'journal' | 'learn' | 'analytics';
 
@@ -83,37 +83,8 @@ function App() {
 
   return (
     <div className="min-h-screen opal-bg">
-      {/* Header */}
-      <header className="header-blur sticky top-0 z-50 safe-area-top">
-        <div className="max-w-7xl mx-auto mobile-padding">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center">
-                <span className="text-black font-bold text-sm">Z</span>
-              </div>
-              <h1 className="text-xl font-bold text-primary">Zene</h1>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={toggleDarkMode}
-                className="p-2 rounded-xl opal-button-secondary"
-              >
-                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
-              <button
-                onClick={signOut}
-                className="p-2 rounded-xl opal-button-secondary"
-              >
-                <LogOut size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
-      <main className="flex-1 mobile-padding py-6 pb-32">
+      <main className="flex-1 mobile-padding py-6 pb-32 safe-area-top">
         <div className="max-w-6xl mx-auto">
           {renderCurrentView()}
         </div>
