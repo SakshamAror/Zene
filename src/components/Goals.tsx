@@ -84,27 +84,28 @@ export default function Goals({ userId }: GoalsProps) {
       </div>
 
       {/* Add New Goal */}
-      <div className="opal-card p-6">
-        <form onSubmit={handleAddGoal} className="flex space-x-4">
+      <div className="opal-card p-4 sm:p-6">
+        <form onSubmit={handleAddGoal} className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <input
             type="text"
             value={newGoal}
             onChange={(e) => setNewGoal(e.target.value)}
             placeholder="What would you like to achieve?"
-            className="opal-input flex-1"
+            className="opal-input flex-1 text-sm sm:text-base"
             disabled={saving}
           />
           <button
             type="submit"
             disabled={!newGoal.trim() || saving}
-            className="opal-button flex items-center space-x-2 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="opal-button flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 sm:py-4 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             {saving ? (
               <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <>
-                <Plus size={20} />
-                <span>Add</span>
+                <Plus size={18} />
+                <span className="hidden sm:inline">Add Goal</span>
+                <span className="sm:hidden">Add</span>
               </>
             )}
           </button>
@@ -166,11 +167,11 @@ export default function Goals({ userId }: GoalsProps) {
                 >
                   <button
                     onClick={() => goal.id && handleToggleGoal(goal.id, goal.completed)}
-                    className="w-6 h-6 border-2 border-secondary rounded-full hover:border-emerald-400 transition-colors flex items-center justify-center"
+                    className="w-6 h-6 border-2 border-secondary rounded-full hover:border-emerald-400 transition-colors flex items-center justify-center flex-shrink-0"
                   >
                     {goal.completed && <Check size={16} className="text-emerald-400" />}
                   </button>
-                  <span className="flex-1 text-primary">{goal.goal}</span>
+                  <span className="flex-1 text-primary text-sm sm:text-base break-words">{goal.goal}</span>
                 </div>
               ))}
             </div>
@@ -203,11 +204,11 @@ export default function Goals({ userId }: GoalsProps) {
                 >
                   <button
                     onClick={() => goal.id && handleToggleGoal(goal.id, goal.completed)}
-                    className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center"
+                    className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"
                   >
                     <Check size={16} className="text-black" />
                   </button>
-                  <span className="flex-1 text-secondary line-through">
+                  <span className="flex-1 text-secondary line-through text-sm sm:text-base break-words">
                     {goal.goal}
                   </span>
                 </div>
