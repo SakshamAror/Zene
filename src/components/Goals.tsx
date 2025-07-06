@@ -84,7 +84,7 @@ export default function Goals({ userId }: GoalsProps) {
       </div>
 
       {/* Add New Goal */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+      <div className="zene-card rounded-2xl p-6 border zene-border">
         <form onSubmit={handleAddGoal} className="flex space-x-4">
           <input
             type="text"
@@ -97,7 +97,10 @@ export default function Goals({ userId }: GoalsProps) {
           <button
             type="submit"
             disabled={!newGoal.trim() || saving}
-            className="flex items-center space-x-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 text-white rounded-xl transition-colors disabled:cursor-not-allowed"
+            className={`flex items-center space-x-2 px-6 py-3 text-white rounded-xl transition-colors
+              bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-400
+              shadow-[0_0_16px_2px_rgba(16,185,129,0.4)]
+              disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed`}
           >
             {saving ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -114,7 +117,7 @@ export default function Goals({ userId }: GoalsProps) {
       {/* Goals List */}
       <div className="grid md:grid-cols-2 gap-6">
         {/* Pending Goals */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+        <div className="zene-card rounded-2xl p-6 border zene-border">
           <div className="flex items-center space-x-3 mb-6">
             <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
               <Target className="text-blue-600 dark:text-blue-400" size={20} />
@@ -151,7 +154,7 @@ export default function Goals({ userId }: GoalsProps) {
         </div>
 
         {/* Completed Goals */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+        <div className="zene-card rounded-2xl p-6 border zene-border">
           <div className="flex items-center space-x-3 mb-6">
             <div className="p-2 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg">
               <Check className="text-emerald-600 dark:text-emerald-400" size={20} />

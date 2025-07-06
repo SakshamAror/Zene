@@ -232,7 +232,7 @@ export default function Timers({ userId }: TimersProps) {
 
             {/* Mode Tabs */}
             <div className="flex justify-center">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-2 border border-slate-200 dark:border-slate-700">
+                <div className="zene-card rounded-2xl p-2 border zene-border">
                     <div className="flex space-x-2">
                         <button
                             onClick={() => setCurrentMode('meditation')}
@@ -307,7 +307,11 @@ export default function Timers({ userId }: TimersProps) {
                         <button
                             onClick={toggleMeditationTimer}
                             disabled={meditationTimeLeft === 0 && !isMeditationCompleted}
-                            className="flex items-center justify-center w-16 h-16 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 text-white rounded-full transition-colors shadow-lg"
+                            className={`flex items-center justify-center w-16 h-16 text-white rounded-full transition-colors shadow-lg
+                                bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-400
+                                shadow-[0_0_16px_2px_rgba(16,185,129,0.4)]
+                                ${isMeditationActive ? '' : ''}
+                                disabled:bg-slate-300 dark:disabled:bg-slate-600`}
                         >
                             {isMeditationActive ? <Square size={24} /> : <Play size={24} />}
                         </button>
@@ -320,7 +324,7 @@ export default function Timers({ userId }: TimersProps) {
                     </div>
 
                     {/* Duration Selection */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+                    <div className="zene-card rounded-2xl p-6 border zene-border">
                         <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Duration</h3>
                         <div className="grid grid-cols-5 gap-3">
                             {meditationDurations.map((dur) => (
@@ -340,7 +344,7 @@ export default function Timers({ userId }: TimersProps) {
                     </div>
 
                     {/* Audio Settings */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+                    <div className="zene-card rounded-2xl p-6 border zene-border">
                         <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Ambient Sounds</h3>
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -394,7 +398,7 @@ export default function Timers({ userId }: TimersProps) {
             {currentMode === 'focus' && (
                 <div className="space-y-8">
                     {/* Session Info */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+                    <div className="zene-card rounded-2xl p-6 border zene-border">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
                                 <Target className="text-blue-500" size={24} />
@@ -457,7 +461,9 @@ export default function Timers({ userId }: TimersProps) {
                     <div className="flex justify-center space-x-4">
                         <button
                             onClick={toggleFocusStopwatch}
-                            className="flex items-center justify-center w-16 h-16 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors shadow-lg"
+                            className={`flex items-center justify-center w-16 h-16 text-white rounded-full transition-colors shadow-lg
+                                bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-400
+                                shadow-[0_0_16px_2px_rgba(16,185,129,0.4)]`}
                         >
                             {isFocusActive ? <Square size={24} /> : <Play size={24} />}
                         </button>
@@ -470,7 +476,7 @@ export default function Timers({ userId }: TimersProps) {
                     </div>
 
                     {/* Audio Settings */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+                    <div className="zene-card rounded-2xl p-6 border zene-border">
                         <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Ambient Sounds</h3>
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

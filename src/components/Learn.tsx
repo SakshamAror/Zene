@@ -77,7 +77,8 @@ export default function Learn({ userId }: LearnProps) {
     const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       book.summary.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const isRead = userBookStatus.find(status => status.book_summary_id === book.id && status.read_at);
+    return matchesSearch && matchesCategory && !isRead;
   });
 
   const categories = ['all', ...new Set(bookSummaries.map(book => book.category).filter(Boolean))];
@@ -92,6 +93,43 @@ export default function Learn({ userId }: LearnProps) {
 
   const closeBookModal = () => {
     setSelectedBook(null);
+  };
+
+  // Helper: Get read summaries, favourited first
+  const readSummaries = bookSummaries
+    .filter(book => userBookStatus.find(status => status.book_summary_id === book.id && status.read_at))
+    .sort((a, b) => {
+      const aFav = isBookFavourited(a.id) ? 1 : 0;
+      const bFav = isBookFavourited(b.id) ? 1 : 0;
+      return bFav - aFav;
+    });
+
+  const isBookRead = (bookId: string) => {
+    return !!userBookStatus.find(status => status.book_summary_id === bookId && status.read_at);
+  };
+
+  const handleMarkAsRead = async (bookId: string) => {
+    try {
+      const existingStatus = userBookStatus.find(status => status.book_summary_id === bookId);
+      await upsertUserBookStatus({
+        user_id: userId,
+        book_summary_id: bookId,
+        is_favourite: existingStatus?.is_favourite || false,
+        read_at: new Date().toISOString().split('T')[0],
+      });
+      setUserBookStatus(prev => {
+        const filtered = prev.filter(status => status.book_summary_id !== bookId);
+        return [...filtered, {
+          id: existingStatus?.id || `temp-${Date.now()}`,
+          user_id: userId,
+          book_summary_id: bookId,
+          is_favourite: existingStatus?.is_favourite || false,
+          read_at: new Date().toISOString().split('T')[0],
+        }];
+      });
+    } catch (error) {
+      console.error('Error marking as read:', error);
+    }
   };
 
   if (loading) {
@@ -111,7 +149,7 @@ export default function Learn({ userId }: LearnProps) {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+      <div className="zene-card rounded-2xl p-6 border zene-border">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
@@ -145,7 +183,7 @@ export default function Learn({ userId }: LearnProps) {
             <div
               key={book.id}
               onClick={() => handleBookClick(book)}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow cursor-pointer"
+              className="zene-card rounded-2xl p-6 border zene-border hover:shadow-lg transition-shadow cursor-pointer"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -217,6 +255,37 @@ export default function Learn({ userId }: LearnProps) {
         </div>
       )}
 
+      {/* Read Summaries Section */}
+      <div className="zene-card rounded-2xl p-6 border zene-border mb-8">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Your Read Summaries</h2>
+        {readSummaries.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {readSummaries.map((book) => (
+              <div
+                key={book.id}
+                onClick={() => handleBookClick(book)}
+                className="zene-card rounded-2xl p-4 border zene-border hover:shadow-lg transition-shadow cursor-pointer"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-base font-semibold text-slate-900 dark:text-white line-clamp-1">{book.title}</h3>
+                  {isBookFavourited(book.id) && (
+                    <Star className="text-yellow-500" size={16} fill="currentColor" />
+                  )}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                  {book.category}
+                </div>
+                <div className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+                  {book.summary.substring(0, 80)}...
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-slate-500 dark:text-slate-400">You haven't marked any summaries as read yet.</div>
+        )}
+      </div>
+
       {/* Book Detail Modal */}
       {selectedBook && (
         <div
@@ -226,7 +295,7 @@ export default function Learn({ userId }: LearnProps) {
           onClick={closeBookModal}
         >
           <div
-            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg md:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-6 relative z-50 custom-scrollbar"
+            className="zene-card rounded-2xl shadow-2xl w-full max-w-lg md:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-6 relative z-50 custom-scrollbar"
             style={{ boxShadow: '0 8px 32px 0 rgba(0,0,0,0.18)' }}
             onClick={e => e.stopPropagation()}
           >
@@ -285,6 +354,25 @@ export default function Learn({ userId }: LearnProps) {
                   </div>
                 )}
               </div>
+            </div>
+            <div className="flex items-center gap-3 mt-6">
+              <button
+                onClick={() => handleMarkAsRead(selectedBook.id)}
+                disabled={isBookRead(selectedBook.id)}
+                className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${isBookRead(selectedBook.id)
+                  ? 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  }`}
+              >
+                {isBookRead(selectedBook.id) ? (
+                  <>
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    Read
+                  </>
+                ) : (
+                  'Mark as Read'
+                )}
+              </button>
             </div>
           </div>
         </div>

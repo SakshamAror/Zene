@@ -62,7 +62,7 @@ function App() {
   const renderCurrentView = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard userId={user.id} />;
+        return <Dashboard userId={user.id} user={user} />;
       case 'timers':
         return <Timers userId={user.id} />;
       case 'goals':
@@ -79,28 +79,28 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen zene-bg">
       {/* Header */}
-      <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+      <header className="zene-card backdrop-blur-sm border-b zene-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">Z</span>
               </div>
-              <h1 className="text-xl font-bold text-slate-900 dark:text-white">Zene</h1>
+              <h1 className="text-xl font-bold zene-text">Zene</h1>
             </div>
 
             <div className="flex items-center space-x-3">
               <button
                 onClick={toggleDarkMode}
-                className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                className="p-2 rounded-lg zene-card zene-text hover:opacity-90 transition-colors"
               >
                 {darkMode ? <Sun size={18} /> : <Moon size={18} />}
               </button>
               <button
                 onClick={signOut}
-                className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                className="p-2 rounded-lg zene-card zene-text hover:opacity-90 transition-colors"
               >
                 <LogOut size={18} />
               </button>
@@ -117,24 +117,25 @@ function App() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700 z-40">
+      <nav className="fixed bottom-0 left-0 right-0 zene-card z-40 border-t zene-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-around py-2">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
-
               return (
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id as View)}
-                  className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-xl transition-all duration-200 ${isActive
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                    }`}
+                  className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-xl transition-all duration-200
+                    ${isActive
+                      ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                      : 'text-slate-500 dark:text-slate-300 hover:text-emerald-500'}
+                  `}
+                  style={{ minWidth: 56 }}
                 >
                   <Icon size={20} />
-                  <span className="text-xs font-medium">{item.label}</span>
+                  <span className="text-xs font-medium mt-0.5">{item.label}</span>
                 </button>
               );
             })}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Calendar, Clock } from 'lucide-react';
 import { getMeditationSessions, getWorkSessions, getJournalLogs, getGoals } from '../lib/saveData';
 import type { MeditationSession, WorkSession, JournalLog, Goal } from '../types';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, ReferenceDot } from 'recharts';
 
 interface AnalyticsProps {
   userId: string;
@@ -104,6 +105,10 @@ export default function Analytics({ userId }: AnalyticsProps) {
   const dailyActivity = getDailyActivity();
   const maxValue = Math.max(...dailyActivity.map(d => Math.max(d.meditation, d.work)), 1);
 
+  // Helper to get grid color based on theme
+  const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+  const gridColor = isDark ? '#334155' : '#e2e8f0';
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -121,7 +126,7 @@ export default function Analytics({ userId }: AnalyticsProps) {
       </div>
 
       {/* Time Range Selector */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+      <div className="zene-card rounded-2xl p-6 border zene-border">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Overview</h2>
           <select
@@ -137,8 +142,8 @@ export default function Analytics({ userId }: AnalyticsProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="zene-card rounded-2xl p-6 border zene-border">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-emerald-100 dark:bg-emerald-900/20 rounded-xl">
               <Clock className="text-emerald-600 dark:text-emerald-400" size={24} />
@@ -152,7 +157,7 @@ export default function Analytics({ userId }: AnalyticsProps) {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+        <div className="zene-card rounded-2xl p-6 border zene-border">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-xl">
               <TrendingUp className="text-blue-600 dark:text-blue-400" size={24} />
@@ -166,7 +171,7 @@ export default function Analytics({ userId }: AnalyticsProps) {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+        <div className="zene-card rounded-2xl p-6 border zene-border">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-xl">
               <Calendar className="text-purple-600 dark:text-purple-400" size={24} />
@@ -179,31 +184,16 @@ export default function Analytics({ userId }: AnalyticsProps) {
             Journal Entries
           </div>
         </div>
-
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-xl">
-              <BarChart3 className="text-orange-600 dark:text-orange-400" size={24} />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
-            {stats.goalCompletionRate}%
-          </div>
-          <div className="text-sm text-slate-500 dark:text-slate-400">
-            Goal Completion
-          </div>
-        </div>
       </div>
 
       {/* Activity Chart */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+      <div className="zene-card rounded-2xl p-6 border zene-border">
         <div className="flex items-center space-x-3 mb-6">
           <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
             <BarChart3 className="text-slate-600 dark:text-slate-400" size={20} />
           </div>
           <h3 className="text-xl font-bold text-slate-900 dark:text-white">Daily Activity</h3>
         </div>
-
         <div className="space-y-4">
           <div className="flex items-center space-x-6 text-sm">
             <div className="flex items-center space-x-2">
@@ -214,38 +204,18 @@ export default function Analytics({ userId }: AnalyticsProps) {
               <div className="w-3 h-3 bg-blue-500 rounded"></div>
               <span className="text-slate-600 dark:text-slate-400">Focus</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-purple-500 rounded"></div>
-              <span className="text-slate-600 dark:text-slate-400">Journal</span>
-            </div>
           </div>
-
-          <div className="grid grid-cols-7 lg:grid-cols-14 gap-2">
-            {dailyActivity.map((day, index) => (
-              <div key={index} className="space-y-1">
-                <div className="text-xs text-slate-500 dark:text-slate-400 text-center">
-                  {new Date(day.date).getDate()}
-                </div>
-                <div className="space-y-1">
-                  <div
-                    className="bg-emerald-500 rounded-sm"
-                    style={{
-                      height: `${Math.max((day.meditation / maxValue) * 40, day.meditation > 0 ? 4 : 0)}px`,
-                    }}
-                  ></div>
-                  <div
-                    className="bg-blue-500 rounded-sm"
-                    style={{
-                      height: `${Math.max((day.work / maxValue) * 40, day.work > 0 ? 4 : 0)}px`,
-                    }}
-                  ></div>
-                  <div
-                    className={`w-full h-1 rounded-sm ${day.hasJournal ? 'bg-purple-500' : 'bg-slate-200 dark:bg-slate-700'
-                      }`}
-                  ></div>
-                </div>
-              </div>
-            ))}
+          <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dailyActivity} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                <XAxis dataKey="date" tickFormatter={d => new Date(d).getDate().toString()} stroke="#64748b" fontSize={12} />
+                <YAxis stroke="#64748b" fontSize={12} tickFormatter={v => `${v}m`} width={32} />
+                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: 14 }} />
+                <Bar dataKey="meditation" name="Meditation" fill="#10b981" radius={[4, 4, 0, 0]} barSize={18} />
+                <Bar dataKey="work" name="Focus" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={18} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>

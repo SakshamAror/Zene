@@ -8,8 +8,9 @@
   box-sizing: border-box;
 }
 
-body {
-  font-family: 'Inter', system-ui, sans-serif;
+body,
+html {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -195,4 +196,160 @@ html {
 
 .dark .custom-scrollbar {
   scrollbar-color: #334155 transparent;
+}
+
+/* Zene Color System */
+:root {
+  --zene-bg: linear-gradient(135deg, #ffffff 0%, #effaff 100%);
+  /* Light background */
+  --zene-bg-dark: linear-gradient(135deg, #0f172a 0%, #0e131e 100%);
+  /* Dark background */
+  --zene-card: #ffffff;
+  /* Light card */
+  --zene-card-dark: #1e293b;
+  /* Dark card */
+  --zene-primary: #10b981;
+  /* Emerald (primary accent) */
+  --zene-primary-dark: #34d399;
+  /* Lighter emerald for dark mode */
+  --zene-text: #1e293b;
+  /* Main text */
+  --zene-text-dark: #f1f5f9;
+  /* Main text dark */
+  --zene-border: #e2e8f0;
+  /* Border */
+  --zene-border-dark: #3a4a61;
+  /* Border dark */
+}
+
+.zene-bg {
+  background: var(--zene-bg);
+}
+
+.dark .zene-bg {
+  background: var(--zene-bg-dark);
+}
+
+.zene-card {
+  background: var(--zene-card);
+}
+
+.dark .zene-card {
+  background: var(--zene-card-dark);
+}
+
+.zene-primary {
+  background: var(--zene-primary);
+  color: #fff;
+}
+
+.dark .zene-primary {
+  background: var(--zene-primary-dark);
+  color: #fff;
+}
+
+.zene-text {
+  color: var(--zene-text);
+}
+
+.dark .zene-text {
+  color: var(--zene-text-dark);
+}
+
+.zene-border {
+  border-color: var(--zene-border);
+}
+
+.dark .zene-border {
+  border-color: var(--zene-border-dark);
+}
+
+/* Icon backgrounds with dark mode support */
+.zene-icon-bg-emerald {
+  background: #d1fae5;
+}
+
+.dark .zene-icon-bg-emerald {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.zene-icon-bg-blue {
+  background: #dbeafe;
+}
+
+.dark .zene-icon-bg-blue {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.zene-icon-bg-purple {
+  background: #e9d5ff;
+}
+
+.dark .zene-icon-bg-purple {
+  background: rgba(147, 51, 234, 0.2);
+}
+
+.zene-icon-bg-orange {
+  background: #fed7aa;
+}
+
+.dark .zene-icon-bg-orange {
+  background: rgba(249, 115, 22, 0.2);
+}
+
+.zene-icon-bg-slate {
+  background: #f1f5f9;
+}
+
+.dark .zene-icon-bg-slate {
+  background: #334155;
+}
+
+/* Icon colors with dark mode support */
+.zene-icon-emerald {
+  color: #059669;
+}
+
+.dark .zene-icon-emerald {
+  color: #34d399;
+}
+
+.zene-icon-blue {
+  color: #2563eb;
+}
+
+.dark .zene-icon-blue {
+  color: #60a5fa;
+}
+
+.zene-icon-purple {
+  color: #7c3aed;
+}
+
+.dark .zene-icon-purple {
+  color: #a78bfa;
+}
+
+.zene-icon-orange {
+  color: #ea580c;
+}
+
+.dark .zene-icon-orange {
+  color: #fb923c;
+}
+
+.zene-icon-slate {
+  color: #475569;
+}
+
+.dark .zene-icon-slate {
+  color: #94a3b8;
+}
+
+.zene-icon-slate-light {
+  color: #94a3b8;
+}
+
+.dark .zene-icon-slate-light {
+  color: #64748b;
 }

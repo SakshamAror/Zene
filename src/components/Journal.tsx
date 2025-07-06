@@ -111,7 +111,7 @@ export default function Journal({ userId }: JournalProps) {
         {/* Main Journal Entry */}
         <div className="lg:col-span-2 space-y-6">
           {/* Date Navigation */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+          <div className="zene-card rounded-2xl p-6 border zene-border">
             <div className="flex items-center justify-between">
               <button
                 onClick={() => navigateDate('prev')}
@@ -143,7 +143,7 @@ export default function Journal({ userId }: JournalProps) {
           </div>
 
           {/* Journal Entry */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+          <div className="zene-card rounded-2xl p-6 border zene-border">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
@@ -157,7 +157,10 @@ export default function Journal({ userId }: JournalProps) {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+                className={`flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors
+                  bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-400
+                  shadow-[0_0_16px_2px_rgba(16,185,129,0.4)]
+                  disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed`}
               >
                 {saving ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -178,7 +181,7 @@ export default function Journal({ userId }: JournalProps) {
 
         {/* Recent Entries Sidebar */}
         <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+          <div className="zene-card rounded-2xl p-6 border zene-border">
             <div className="flex items-center space-x-3 mb-4">
               <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
                 <Calendar className="text-slate-600 dark:text-slate-400" size={20} />

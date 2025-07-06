@@ -5,9 +5,10 @@ import type { MeditationSession, WorkSession, JournalLog, Goal } from '../types'
 
 interface DashboardProps {
   userId: string;
+  user?: any;
 }
 
-export default function Dashboard({ userId }: DashboardProps) {
+export default function Dashboard({ userId, user }: DashboardProps) {
   const [stats, setStats] = useState({
     totalMeditation: 0,
     totalWork: 0,
@@ -105,87 +106,98 @@ export default function Dashboard({ userId }: DashboardProps) {
     <div className="space-y-8">
       {/* Welcome Section */}
       <div className="text-center py-8">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-          Welcome back to your mindful journey
+        <h1 className="text-3xl font-bold zene-text mb-2">
+          {(() => {
+            let name = '';
+            if (user) {
+              name = user.user_metadata?.full_name || user.user_metadata?.name || '';
+              if (!name && user.email) {
+                name = user.email.split('@')[0];
+              }
+            }
+            return name
+              ? `Welcome back, ${name}. Make the most of your day with Zene`
+              : 'Welcome back. Make the most of your day with Zene';
+          })()}
         </h1>
-        <p className="text-slate-600 dark:text-slate-400 text-lg">
+        <p className="zene-text text-lg">
           Great minds don't wander. They conquer.
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+        <div className="zene-card rounded-2xl p-6 border zene-border">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-emerald-100 dark:bg-emerald-900/20 rounded-xl">
-              <Clock className="text-emerald-600 dark:text-emerald-400" size={24} />
+            <div className="p-3 zene-icon-bg-emerald rounded-xl">
+              <Clock className="zene-icon-emerald" size={24} />
             </div>
-            <span className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalMeditation}</span>
+            <span className="text-2xl font-bold zene-text">{stats.totalMeditation}</span>
           </div>
-          <h3 className="font-semibold text-slate-900 dark:text-white">Minutes Meditated</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Total mindful minutes</p>
+          <h3 className="font-semibold zene-text">Minutes Meditated</h3>
+          <p className="text-sm zene-text">Total mindful minutes</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+        <div className="zene-card rounded-2xl p-6 border zene-border">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-xl">
-              <Target className="text-blue-600 dark:text-blue-400" size={24} />
+            <div className="p-3 zene-icon-bg-blue rounded-xl">
+              <Target className="zene-icon-blue" size={24} />
             </div>
-            <span className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalWork}</span>
+            <span className="text-2xl font-bold zene-text">{stats.totalWork}</span>
           </div>
-          <h3 className="font-semibold text-slate-900 dark:text-white">Focus Minutes</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Deep work sessions</p>
+          <h3 className="font-semibold zene-text">Focus Minutes</h3>
+          <p className="text-sm zene-text">Deep work sessions</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+        <div className="zene-card rounded-2xl p-6 border zene-border">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-xl">
-              <PenTool className="text-purple-600 dark:text-purple-400" size={24} />
+            <div className="p-3 zene-icon-bg-purple rounded-xl">
+              <PenTool className="zene-icon-purple" size={24} />
             </div>
-            <span className="text-2xl font-bold text-slate-900 dark:text-white">{stats.journalEntries}</span>
+            <span className="text-2xl font-bold zene-text">{stats.journalEntries}</span>
           </div>
-          <h3 className="font-semibold text-slate-900 dark:text-white">Journal Entries</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Reflective moments</p>
+          <h3 className="font-semibold zene-text">Journal Entries</h3>
+          <p className="text-sm zene-text">Reflective moments</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+        <div className="zene-card rounded-2xl p-6 border zene-border">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-xl">
-              <Award className="text-orange-600 dark:text-orange-400" size={24} />
+            <div className="p-3 zene-icon-bg-orange rounded-xl">
+              <Award className="zene-icon-orange" size={24} />
             </div>
-            <span className="text-2xl font-bold text-slate-900 dark:text-white">{stats.streak}</span>
+            <span className="text-2xl font-bold zene-text">{stats.streak}</span>
           </div>
-          <h3 className="font-semibold text-slate-900 dark:text-white">Day Streak</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Consistent practice</p>
+          <h3 className="font-semibold zene-text">Day Streak</h3>
+          <p className="text-sm zene-text">Consistent practice</p>
         </div>
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+      <div className="zene-card rounded-2xl p-6 border zene-border">
         <div className="flex items-center space-x-3 mb-6">
-          <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
-            <TrendingUp className="text-slate-600 dark:text-slate-400" size={20} />
+          <div className="p-2 zene-icon-bg-slate rounded-lg">
+            <TrendingUp className="zene-icon-slate" size={20} />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Recent Activity</h2>
+          <h2 className="text-xl font-bold zene-text">Recent Activity</h2>
         </div>
 
         {recentActivity.length > 0 ? (
           <div className="space-y-4">
             {recentActivity.map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+              <div key={index} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 rounded-xl">
                 <div className="flex items-center space-x-3">
                   {getActivityIcon(activity.type)}
                   <div>
-                    <p className="font-medium text-slate-900 dark:text-white">
+                    <p className="font-medium zene-text">
                       {getActivityLabel(activity.type)}
                     </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                    <p className="text-sm zene-text">
                       {new Date(activity.date).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
                 {activity.duration && (
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  <span className="text-sm font-medium zene-text">
                     {formatDuration(activity.duration)}
                   </span>
                 )}
@@ -194,9 +206,9 @@ export default function Dashboard({ userId }: DashboardProps) {
           </div>
         ) : (
           <div className="text-center py-8">
-            <Calendar className="mx-auto text-slate-400 dark:text-slate-500 mb-4" size={48} />
-            <p className="text-slate-500 dark:text-slate-400">No recent activity</p>
-            <p className="text-sm text-slate-400 dark:text-slate-500">Start your mindful journey today</p>
+            <Calendar className="mx-auto zene-icon-slate-light mb-4" size={48} />
+            <p className="zene-text">No recent activity</p>
+            <p className="text-sm zene-text">Start your mindful journey today</p>
           </div>
         )}
       </div>
