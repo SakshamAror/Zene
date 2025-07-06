@@ -84,16 +84,16 @@ function App() {
   return (
     <div className="min-h-screen opal-bg">
       {/* Main Content */}
-      <main className="flex-1 mobile-padding py-6 pb-32 safe-area-top">
+      <main className="flex-1 mobile-padding py-6 pb-28 safe-area-top">
         <div className="max-w-6xl mx-auto">
           {renderCurrentView()}
         </div>
       </main>
 
       {/* Floating Bottom Navigation */}
-      <nav className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
+      <nav className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 safe-area-bottom">
         <div className="floating-nav-container">
-          <div className="flex space-x-2">
+          <div className="flex space-x-1">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
