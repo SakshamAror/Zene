@@ -90,10 +90,10 @@ function App() {
         </div>
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 header-blur safe-area-bottom">
-        <div className="max-w-7xl mx-auto mobile-padding">
-          <div className="flex justify-around py-3">
+      {/* Floating Bottom Navigation */}
+      <nav className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
+        <div className="floating-nav-container">
+          <div className="flex space-x-2">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
@@ -101,10 +101,10 @@ function App() {
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id as View)}
-                  className={`nav-item ${isActive ? 'active' : ''}`}
+                  className={`floating-nav-item ${isActive ? 'active' : ''}`}
+                  title={item.label}
                 >
                   <Icon size={20} />
-                  <span className="text-xs font-medium mt-1">{item.label}</span>
                 </button>
               );
             })}
