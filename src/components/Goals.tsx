@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Check, Target } from 'lucide-react';
+import { Plus, Check, Target, ChevronRight } from 'lucide-react';
 import { getGoals, saveGoal, updateGoal } from '../lib/saveData';
 import type { Goal } from '../types';
 
@@ -70,7 +70,7 @@ export default function Goals({ userId }: GoalsProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 loading-spinner"></div>
       </div>
     );
   }
@@ -79,50 +79,80 @@ export default function Goals({ userId }: GoalsProps) {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Goals</h1>
-        <p className="text-slate-600 dark:text-slate-400">Set intentions and track your progress</p>
+        <h1 className="mobile-text-3xl font-bold text-primary mb-2">Goals</h1>
+        <p className="text-secondary">Set intentions and track your progress</p>
       </div>
 
       {/* Add New Goal */}
-      <div className="zene-card rounded-2xl p-6 border zene-border">
+      <div className="opal-card p-6">
         <form onSubmit={handleAddGoal} className="flex space-x-4">
           <input
             type="text"
             value={newGoal}
             onChange={(e) => setNewGoal(e.target.value)}
             placeholder="What would you like to achieve?"
-            className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
+            className="opal-input flex-1"
             disabled={saving}
           />
           <button
             type="submit"
             disabled={!newGoal.trim() || saving}
-            className={`flex items-center space-x-2 px-6 py-3 text-white rounded-xl transition-colors
-              bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-400
-              shadow-[0_0_16px_2px_rgba(16,185,129,0.4)]
-              disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed`}
+            className="opal-button flex items-center space-x-2 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <>
                 <Plus size={20} />
-                <span>Add Goal</span>
+                <span>Add</span>
               </>
             )}
           </button>
         </form>
       </div>
 
-      {/* Goals List */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Pending Goals */}
-        <div className="zene-card rounded-2xl p-6 border zene-border">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-              <Target className="text-blue-600 dark:text-blue-400" size={20} />
+      {/* Progress Overview */}
+      <div className="opal-card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="mobile-text-xl font-bold text-primary">Progress</h2>
+          <ChevronRight size={20} className="text-secondary" />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-primary">{pendingGoals.length}</div>
+            <div className="text-sm text-secondary">In Progress</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-emerald-400">{completedGoals.length}</div>
+            <div className="text-sm text-secondary">Completed</div>
+          </div>
+        </div>
+        
+        {goals.length > 0 && (
+          <div className="mt-4">
+            <div className="progress-bar h-2">
+              <div 
+                className="progress-fill h-full"
+                style={{ width: `${(completedGoals.length / goals.length) * 100}%` }}
+              />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            <div className="text-center mt-2 text-sm text-secondary">
+              {Math.round((completedGoals.length / goals.length) * 100)}% Complete
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Goals List */}
+      <div className="space-y-6">
+        {/* Pending Goals */}
+        <div className="opal-card p-6">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="icon-bg icon-bg-blue">
+              <Target size={20} />
+            </div>
+            <h2 className="mobile-text-xl font-bold text-primary">
               In Progress ({pendingGoals.length})
             </h2>
           </div>
@@ -132,65 +162,59 @@ export default function Goals({ userId }: GoalsProps) {
               {pendingGoals.map((goal) => (
                 <div
                   key={goal.id}
-                  className="flex items-center space-x-3 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl"
+                  className="flex items-center space-x-3 p-4 opal-card-dark rounded-2xl"
                 >
                   <button
                     onClick={() => goal.id && handleToggleGoal(goal.id, goal.completed)}
-                    className="w-6 h-6 border-2 border-slate-300 dark:border-slate-600 rounded-full hover:border-emerald-500 dark:hover:border-emerald-400 transition-colors flex items-center justify-center"
+                    className="w-6 h-6 border-2 border-secondary rounded-full hover:border-emerald-400 transition-colors flex items-center justify-center"
                   >
-                    {goal.completed && <Check size={16} className="text-emerald-600" />}
+                    {goal.completed && <Check size={16} className="text-emerald-400" />}
                   </button>
-                  <span className="flex-1 text-slate-900 dark:text-white">{goal.goal}</span>
+                  <span className="flex-1 text-primary">{goal.goal}</span>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8">
-              <Target className="mx-auto text-slate-400 dark:text-slate-500 mb-4" size={48} />
-              <p className="text-slate-500 dark:text-slate-400">No goals yet</p>
-              <p className="text-sm text-slate-400 dark:text-slate-500">Add your first goal above</p>
+              <Target className="mx-auto text-secondary mb-4" size={48} />
+              <p className="text-secondary">No goals yet</p>
+              <p className="text-sm text-tertiary">Add your first goal above</p>
             </div>
           )}
         </div>
 
         {/* Completed Goals */}
-        <div className="zene-card rounded-2xl p-6 border zene-border">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg">
-              <Check className="text-emerald-600 dark:text-emerald-400" size={20} />
+        {completedGoals.length > 0 && (
+          <div className="opal-card p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="icon-bg icon-bg-emerald">
+                <Check size={20} />
+              </div>
+              <h2 className="mobile-text-xl font-bold text-primary">
+                Completed ({completedGoals.length})
+              </h2>
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Completed ({completedGoals.length})
-            </h2>
-          </div>
 
-          {completedGoals.length > 0 ? (
             <div className="space-y-3">
               {completedGoals.map((goal) => (
                 <div
                   key={goal.id}
-                  className="flex items-center space-x-3 p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl"
+                  className="flex items-center space-x-3 p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20"
                 >
                   <button
                     onClick={() => goal.id && handleToggleGoal(goal.id, goal.completed)}
                     className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center"
                   >
-                    <Check size={16} className="text-white" />
+                    <Check size={16} className="text-black" />
                   </button>
-                  <span className="flex-1 text-slate-700 dark:text-slate-300 line-through">
+                  <span className="flex-1 text-secondary line-through">
                     {goal.goal}
                   </span>
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <Check className="mx-auto text-slate-400 dark:text-slate-500 mb-4" size={48} />
-              <p className="text-slate-500 dark:text-slate-400">No completed goals</p>
-              <p className="text-sm text-slate-400 dark:text-slate-500">Complete your first goal!</p>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

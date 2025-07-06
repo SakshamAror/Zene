@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, PenTool, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, PenTool, ChevronLeft, ChevronRight, Save } from 'lucide-react';
 import { getJournalLogs, saveJournalLog } from '../lib/saveData';
 import type { JournalLog } from '../types';
 
@@ -79,7 +79,6 @@ export default function Journal({ userId }: JournalProps) {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
-      year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
@@ -94,135 +93,129 @@ export default function Journal({ userId }: JournalProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 loading-spinner"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Journal</h1>
-        <p className="text-slate-600 dark:text-slate-400">Reflect on your thoughts and experiences</p>
+        <h1 className="mobile-text-3xl font-bold text-primary mb-2">Journal</h1>
+        <p className="text-secondary">Reflect on your thoughts and experiences</p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Main Journal Entry */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Date Navigation */}
-          <div className="zene-card rounded-2xl p-6 border zene-border">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => navigateDate('prev')}
-                className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-              >
-                <ChevronLeft size={20} />
-              </button>
+      {/* Date Navigation */}
+      <div className="opal-card p-6">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigateDate('prev')}
+            className="opal-button-secondary p-3 rounded-xl"
+          >
+            <ChevronLeft size={20} />
+          </button>
 
-              <div className="text-center">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                  {formatDate(selectedDate)}
-                </h2>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="mt-2 px-3 py-1 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-300"
-                />
-              </div>
-
-              <button
-                onClick={() => navigateDate('next')}
-                disabled={selectedDate >= new Date().toISOString().split('T')[0]}
-                className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight size={20} />
-              </button>
-            </div>
-          </div>
-
-          {/* Journal Entry */}
-          <div className="zene-card rounded-2xl p-6 border zene-border">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
-                  <PenTool className="text-purple-600 dark:text-purple-400" size={20} />
-                </div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                  Today's Entry
-                </h3>
-              </div>
-
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className={`flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors
-                  bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-400
-                  shadow-[0_0_16px_2px_rgba(16,185,129,0.4)]
-                  disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed`}
-              >
-                {saving ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <span>Save</span>
-                )}
-              </button>
-            </div>
-
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="How are you feeling today? What's on your mind? What are you grateful for?"
-              className="w-full h-64 p-4 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
+          <div className="text-center">
+            <h2 className="mobile-text-xl font-bold text-primary">
+              {formatDate(selectedDate)}
+            </h2>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="mt-2 opal-input text-center text-sm"
             />
           </div>
-        </div>
 
-        {/* Recent Entries Sidebar */}
-        <div className="space-y-6">
-          <div className="zene-card rounded-2xl p-6 border zene-border">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                <Calendar className="text-slate-600 dark:text-slate-400" size={20} />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Recent Entries
-              </h3>
+          <button
+            onClick={() => navigateDate('next')}
+            disabled={selectedDate >= new Date().toISOString().split('T')[0]}
+            className="opal-button-secondary p-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* Journal Entry */}
+      <div className="opal-card p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="icon-bg icon-bg-purple">
+              <PenTool size={20} />
             </div>
-
-            {getRecentEntries().length > 0 ? (
-              <div className="space-y-3">
-                {getRecentEntries().map((log) => (
-                  <button
-                    key={log.id}
-                    onClick={() => setSelectedDate(log.date)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${selectedDate === log.date
-                      ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800'
-                      : 'bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700'
-                      }`}
-                  >
-                    <div className="text-sm font-medium text-slate-900 dark:text-white mb-1">
-                      {new Date(log.date).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
-                      {log.log.substring(0, 80)}...
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <PenTool className="mx-auto text-slate-400 dark:text-slate-500 mb-4" size={48} />
-                <p className="text-slate-500 dark:text-slate-400">No entries yet</p>
-                <p className="text-sm text-slate-400 dark:text-slate-500">Start writing your first entry</p>
-              </div>
-            )}
+            <h3 className="mobile-text-lg font-semibold text-primary">
+              Today's Entry
+            </h3>
           </div>
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="opal-button flex items-center space-x-2 disabled:opacity-50"
+          >
+            {saving ? (
+              <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <>
+                <Save size={16} />
+                <span>Save</span>
+              </>
+            )}
+          </button>
         </div>
+
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="How are you feeling today? What's on your mind? What are you grateful for?"
+          className="opal-input w-full h-64 resize-none"
+          style={{ fontFamily: 'Inter, sans-serif' }}
+        />
+      </div>
+
+      {/* Recent Entries */}
+      <div className="opal-card p-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="icon-bg icon-bg-blue">
+            <Calendar size={20} />
+          </div>
+          <h3 className="mobile-text-lg font-semibold text-primary">
+            Recent Entries
+          </h3>
+        </div>
+
+        {getRecentEntries().length > 0 ? (
+          <div className="space-y-3">
+            {getRecentEntries().map((log) => (
+              <button
+                key={log.id}
+                onClick={() => setSelectedDate(log.date)}
+                className={`w-full text-left p-4 rounded-xl transition-colors ${selectedDate === log.date
+                  ? 'bg-emerald-500/20 border border-emerald-500/30'
+                  : 'opal-card-dark hover:bg-white/10'
+                  }`}
+              >
+                <div className="text-sm font-medium text-primary mb-1">
+                  {new Date(log.date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </div>
+                <div className="text-sm text-secondary line-clamp-2">
+                  {log.log.substring(0, 80)}...
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <PenTool className="mx-auto text-secondary mb-4" size={48} />
+            <p className="text-secondary">No entries yet</p>
+            <p className="text-sm text-tertiary">Start writing your first entry</p>
+          </div>
+        )}
       </div>
     </div>
   );

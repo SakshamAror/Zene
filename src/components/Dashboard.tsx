@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Target, PenTool, TrendingUp, Calendar, Award } from 'lucide-react';
+import { Clock, Target, PenTool, TrendingUp, Calendar, Award, ChevronRight } from 'lucide-react';
 import { getMeditationSessions, getWorkSessions, getJournalLogs, getGoals } from '../lib/saveData';
 import type { MeditationSession, WorkSession, JournalLog, Goal } from '../types';
 
@@ -17,6 +17,7 @@ export default function Dashboard({ userId, user }: DashboardProps) {
     streak: 0,
   });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
@@ -53,6 +54,8 @@ export default function Dashboard({ userId, user }: DashboardProps) {
       setRecentActivity(activities);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -86,9 +89,9 @@ export default function Dashboard({ userId, user }: DashboardProps) {
 
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'meditation': return <Clock size={16} className="text-emerald-600" />;
-      case 'work': return <Target size={16} className="text-blue-600" />;
-      case 'journal': return <PenTool size={16} className="text-purple-600" />;
+      case 'meditation': return <Clock size={16} className="text-emerald-400" />;
+      case 'work': return <Target size={16} className="text-blue-400" />;
+      case 'journal': return <PenTool size={16} className="text-purple-400" />;
       default: return null;
     }
   };
@@ -102,102 +105,107 @@ export default function Dashboard({ userId, user }: DashboardProps) {
     }
   };
 
+  const getUserName = () => {
+    if (user) {
+      let name = user.user_metadata?.full_name || user.user_metadata?.name || '';
+      if (!name && user.email) {
+        name = user.email.split('@')[0];
+      }
+      return name ? name.split(' ')[0] : '';
+    }
+    return '';
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-8 h-8 loading-spinner"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
       <div className="text-center py-8">
-        <h1 className="text-3xl font-bold zene-text mb-2">
-          {(() => {
-            let name = '';
-            if (user) {
-              name = user.user_metadata?.full_name || user.user_metadata?.name || '';
-              if (!name && user.email) {
-                name = user.email.split('@')[0];
-              }
-            }
-            return name
-              ? `Welcome back, ${name}. Make the most of your day with Zene`
-              : 'Welcome back. Make the most of your day with Zene';
-          })()}
+        <h1 className="mobile-text-3xl md:text-4xl font-bold text-primary mb-3">
+          {getUserName() ? `Welcome back, ${getUserName()}` : 'Welcome back'}
         </h1>
-        <p className="zene-text text-lg">
+        <p className="text-secondary mobile-text-lg">
           Great minds don't wander. They conquer.
         </p>
       </div>
 
+      {/* Main Stats */}
+      <div className="opal-card p-6 mb-6">
+        <div className="text-center mb-6">
+          <div className="mobile-text-2xl md:text-3xl font-bold text-primary mb-2">
+            {stats.totalMeditation + stats.totalWork}m
+          </div>
+          <div className="text-secondary">Total mindful minutes today</div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center">
+            <div className="icon-bg icon-bg-emerald mx-auto">
+              <Clock size={24} />
+            </div>
+            <div className="text-xl font-bold text-primary">{stats.totalMeditation}m</div>
+            <div className="text-sm text-secondary">Meditation</div>
+          </div>
+          <div className="text-center">
+            <div className="icon-bg icon-bg-blue mx-auto">
+              <Target size={24} />
+            </div>
+            <div className="text-xl font-bold text-primary">{stats.totalWork}m</div>
+            <div className="text-sm text-secondary">Focus</div>
+          </div>
+        </div>
+      </div>
+
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="zene-card rounded-2xl p-6 border zene-border">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 zene-icon-bg-emerald rounded-xl">
-              <Clock className="zene-icon-emerald" size={24} />
-            </div>
-            <span className="text-2xl font-bold zene-text">{stats.totalMeditation}</span>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="stat-card">
+          <div className="icon-bg icon-bg-purple">
+            <PenTool size={20} />
           </div>
-          <h3 className="font-semibold zene-text">Minutes Meditated</h3>
-          <p className="text-sm zene-text">Total mindful minutes</p>
+          <div className="text-xl font-bold text-primary">{stats.journalEntries}</div>
+          <div className="text-sm text-secondary">Journal Entries</div>
         </div>
 
-        <div className="zene-card rounded-2xl p-6 border zene-border">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 zene-icon-bg-blue rounded-xl">
-              <Target className="zene-icon-blue" size={24} />
-            </div>
-            <span className="text-2xl font-bold zene-text">{stats.totalWork}</span>
+        <div className="stat-card">
+          <div className="icon-bg icon-bg-orange">
+            <Award size={20} />
           </div>
-          <h3 className="font-semibold zene-text">Focus Minutes</h3>
-          <p className="text-sm zene-text">Deep work sessions</p>
-        </div>
-
-        <div className="zene-card rounded-2xl p-6 border zene-border">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 zene-icon-bg-purple rounded-xl">
-              <PenTool className="zene-icon-purple" size={24} />
-            </div>
-            <span className="text-2xl font-bold zene-text">{stats.journalEntries}</span>
-          </div>
-          <h3 className="font-semibold zene-text">Journal Entries</h3>
-          <p className="text-sm zene-text">Reflective moments</p>
-        </div>
-
-        <div className="zene-card rounded-2xl p-6 border zene-border">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 zene-icon-bg-orange rounded-xl">
-              <Award className="zene-icon-orange" size={24} />
-            </div>
-            <span className="text-2xl font-bold zene-text">{stats.streak}</span>
-          </div>
-          <h3 className="font-semibold zene-text">Day Streak</h3>
-          <p className="text-sm zene-text">Consistent practice</p>
+          <div className="text-xl font-bold text-primary">{stats.streak}</div>
+          <div className="text-sm text-secondary">Day Streak</div>
         </div>
       </div>
 
       {/* Recent Activity */}
-      <div className="zene-card rounded-2xl p-6 border zene-border">
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="p-2 zene-icon-bg-slate rounded-lg">
-            <TrendingUp className="zene-icon-slate" size={20} />
-          </div>
-          <h2 className="text-xl font-bold zene-text">Recent Activity</h2>
+      <div className="opal-card p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="mobile-text-xl font-bold text-primary">Recent Activity</h2>
+          <ChevronRight size={20} className="text-secondary" />
         </div>
 
         {recentActivity.length > 0 ? (
           <div className="space-y-4">
             {recentActivity.map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+              <div key={index} className="flex items-center justify-between p-4 opal-card-dark rounded-2xl">
                 <div className="flex items-center space-x-3">
                   {getActivityIcon(activity.type)}
                   <div>
-                    <p className="font-medium zene-text">
+                    <p className="font-medium text-primary text-sm">
                       {getActivityLabel(activity.type)}
                     </p>
-                    <p className="text-sm zene-text">
+                    <p className="text-xs text-secondary">
                       {new Date(activity.date).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
                 {activity.duration && (
-                  <span className="text-sm font-medium zene-text">
+                  <span className="text-sm font-medium text-secondary">
                     {formatDuration(activity.duration)}
                   </span>
                 )}
@@ -206,11 +214,26 @@ export default function Dashboard({ userId, user }: DashboardProps) {
           </div>
         ) : (
           <div className="text-center py-8">
-            <Calendar className="mx-auto zene-icon-slate-light mb-4" size={48} />
-            <p className="zene-text">No recent activity</p>
-            <p className="text-sm zene-text">Start your mindful journey today</p>
+            <Calendar className="mx-auto text-secondary mb-4" size={48} />
+            <p className="text-secondary">No recent activity</p>
+            <p className="text-sm text-tertiary">Start your mindful journey today</p>
           </div>
         )}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 gap-4">
+        <button className="opal-card p-6 text-left">
+          <Clock className="text-emerald-400 mb-3" size={24} />
+          <div className="font-semibold text-primary mb-1">Start Meditation</div>
+          <div className="text-sm text-secondary">Begin a mindful session</div>
+        </button>
+        
+        <button className="opal-card p-6 text-left">
+          <Target className="text-blue-400 mb-3" size={24} />
+          <div className="font-semibold text-primary mb-1">Focus Session</div>
+          <div className="text-sm text-secondary">Deep work time</div>
+        </button>
       </div>
     </div>
   );

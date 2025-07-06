@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Volume2, Clock, Target, Square, X } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, Clock, Target, Square, X, ChevronDown } from 'lucide-react';
 import { saveMeditationSession, saveWorkSession } from '../lib/saveData';
 
 interface TimersProps {
@@ -30,6 +30,7 @@ export default function Timers({ userId }: TimersProps) {
 
     // Current Mode
     const [currentMode, setCurrentMode] = useState<TimerMode>('meditation');
+    const [showDurationPicker, setShowDurationPicker] = useState(false);
 
     const meditationDurations = [
         { label: '5 min', value: 300 },
@@ -226,19 +227,19 @@ export default function Timers({ userId }: TimersProps) {
         <div className="max-w-4xl mx-auto space-y-8">
             {/* Header */}
             <div className="text-center">
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Timers</h1>
-                <p className="text-slate-600 dark:text-slate-400">Meditation and focus tools</p>
+                <h1 className="mobile-text-3xl font-bold text-primary mb-2">Focus</h1>
+                <p className="text-secondary">Meditation and focus tools</p>
             </div>
 
             {/* Mode Tabs */}
             <div className="flex justify-center">
-                <div className="zene-card rounded-2xl p-2 border zene-border">
+                <div className="opal-card p-2">
                     <div className="flex space-x-2">
                         <button
                             onClick={() => setCurrentMode('meditation')}
                             className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-colors ${currentMode === 'meditation'
-                                ? 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300'
-                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                ? 'bg-emerald-500/20 text-emerald-400'
+                                : 'text-secondary hover:text-primary'
                                 }`}
                         >
                             <Clock size={20} />
@@ -247,8 +248,8 @@ export default function Timers({ userId }: TimersProps) {
                         <button
                             onClick={() => setCurrentMode('focus')}
                             className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-colors ${currentMode === 'focus'
-                                ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                ? 'bg-blue-500/20 text-blue-400'
+                                : 'text-secondary hover:text-primary'
                                 }`}
                         >
                             <Target size={20} />
@@ -264,36 +265,41 @@ export default function Timers({ userId }: TimersProps) {
                     {/* Timer Circle */}
                     <div className="flex justify-center">
                         <div className="relative w-80 h-80">
-                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <svg className="w-full h-full transform -rotate-90 timer-circle" viewBox="0 0 100 100">
                                 <circle
                                     cx="50"
                                     cy="50"
                                     r="45"
-                                    stroke="currentColor"
+                                    stroke="rgba(255,255,255,0.1)"
                                     strokeWidth="2"
                                     fill="none"
-                                    className="text-slate-200 dark:text-slate-700"
                                 />
                                 <circle
                                     cx="50"
                                     cy="50"
                                     r="45"
-                                    stroke="currentColor"
+                                    stroke="url(#gradient)"
                                     strokeWidth="2"
                                     fill="none"
                                     strokeDasharray={`${2 * Math.PI * 45}`}
                                     strokeDashoffset={`${2 * Math.PI * 45 * (1 - meditationProgress / 100)}`}
-                                    className="text-emerald-500 transition-all duration-1000 ease-linear"
+                                    className="transition-all duration-1000 ease-linear"
                                     strokeLinecap="round"
                                 />
+                                <defs>
+                                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stopColor="#10b981" />
+                                        <stop offset="100%" stopColor="#14b8a6" />
+                                    </linearGradient>
+                                </defs>
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <div className="text-center">
-                                    <div className="text-4xl font-bold text-slate-900 dark:text-white mb-2">
+                                    <div className="text-4xl font-bold text-primary mb-2">
                                         {formatTime(meditationTimeLeft)}
                                     </div>
                                     {isMeditationCompleted && (
-                                        <div className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                        <div className="text-emerald-400 font-medium">
                                             Session Complete!
                                         </div>
                                     )}
@@ -307,54 +313,65 @@ export default function Timers({ userId }: TimersProps) {
                         <button
                             onClick={toggleMeditationTimer}
                             disabled={meditationTimeLeft === 0 && !isMeditationCompleted}
-                            className={`flex items-center justify-center w-16 h-16 text-white rounded-full transition-colors shadow-lg
-                                bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-400
-                                shadow-[0_0_16px_2px_rgba(16,185,129,0.4)]
-                                ${isMeditationActive ? '' : ''}
-                                disabled:bg-slate-300 dark:disabled:bg-slate-600`}
+                            className="opal-button w-16 h-16 rounded-full flex items-center justify-center disabled:opacity-50"
                         >
                             {isMeditationActive ? <Square size={24} /> : <Play size={24} />}
                         </button>
                         <button
                             onClick={cancelMeditationTimer}
-                            className="flex items-center justify-center w-16 h-16 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-full transition-colors"
+                            className="opal-button-secondary w-16 h-16 rounded-full flex items-center justify-center"
                         >
                             <X size={24} />
                         </button>
                     </div>
 
                     {/* Duration Selection */}
-                    <div className="zene-card rounded-2xl p-6 border zene-border">
-                        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Duration</h3>
-                        <div className="grid grid-cols-5 gap-3">
-                            {meditationDurations.map((dur) => (
-                                <button
-                                    key={dur.value}
-                                    onClick={() => setMeditationDuration(dur.value)}
-                                    disabled={isMeditationActive}
-                                    className={`py-3 px-4 rounded-xl font-medium transition-colors ${meditationDuration === dur.value
-                                        ? 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300'
-                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                >
-                                    {dur.label}
-                                </button>
-                            ))}
+                    <div className="opal-card p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-primary">Duration</h3>
+                            <button
+                                onClick={() => setShowDurationPicker(!showDurationPicker)}
+                                className="opal-button-secondary px-4 py-2 flex items-center space-x-2"
+                            >
+                                <span>{Math.floor(meditationDuration / 60)} min</span>
+                                <ChevronDown size={16} />
+                            </button>
                         </div>
+                        
+                        {showDurationPicker && (
+                            <div className="grid grid-cols-3 gap-3">
+                                {meditationDurations.map((dur) => (
+                                    <button
+                                        key={dur.value}
+                                        onClick={() => {
+                                            setMeditationDuration(dur.value);
+                                            setShowDurationPicker(false);
+                                        }}
+                                        disabled={isMeditationActive}
+                                        className={`py-3 px-4 rounded-xl font-medium transition-colors ${meditationDuration === dur.value
+                                            ? 'bg-emerald-500/20 text-emerald-400'
+                                            : 'opal-button-secondary'
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    >
+                                        {dur.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Audio Settings */}
-                    <div className="zene-card rounded-2xl p-6 border zene-border">
-                        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Ambient Sounds</h3>
+                    <div className="opal-card p-6">
+                        <h3 className="font-semibold text-primary mb-4">Ambient Sounds</h3>
                         <div className="space-y-4">
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 {audioOptions.map((option) => (
                                     <button
                                         key={option.value}
                                         onClick={() => setSelectedAudio(option.value)}
                                         className={`py-3 px-4 rounded-xl font-medium transition-colors ${selectedAudio === option.value
-                                            ? 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300'
-                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                            ? 'bg-emerald-500/20 text-emerald-400'
+                                            : 'opal-button-secondary'
                                             }`}
                                     >
                                         {option.label}
@@ -364,7 +381,7 @@ export default function Timers({ userId }: TimersProps) {
 
                             {selectedAudio !== 'none' && (
                                 <div className="flex items-center space-x-3">
-                                    <Volume2 className="text-slate-600 dark:text-slate-400" size={20} />
+                                    <Volume2 className="text-secondary" size={20} />
                                     <input
                                         type="range"
                                         min="0"
@@ -372,9 +389,9 @@ export default function Timers({ userId }: TimersProps) {
                                         step="0.1"
                                         value={volume}
                                         onChange={(e) => setVolume(parseFloat(e.target.value))}
-                                        className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                                        className="flex-1"
                                     />
-                                    <span className="text-sm text-slate-600 dark:text-slate-400 w-8">
+                                    <span className="text-sm text-secondary w-8">
                                         {Math.round(volume * 100)}%
                                     </span>
                                 </div>
@@ -398,20 +415,22 @@ export default function Timers({ userId }: TimersProps) {
             {currentMode === 'focus' && (
                 <div className="space-y-8">
                     {/* Session Info */}
-                    <div className="zene-card rounded-2xl p-6 border zene-border">
+                    <div className="opal-card p-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
-                                <Target className="text-blue-500" size={24} />
+                                <div className="icon-bg icon-bg-blue">
+                                    <Target size={24} />
+                                </div>
                                 <div>
-                                    <h3 className="font-semibold text-slate-900 dark:text-white">Focus Session</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Track your focused work time</p>
+                                    <h3 className="font-semibold text-primary">Focus Session</h3>
+                                    <p className="text-sm text-secondary">Track your focused work time</p>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                                <div className="text-2xl font-bold text-primary">
                                     {focusSessions}
                                 </div>
-                                <div className="text-sm text-slate-500 dark:text-slate-400">
+                                <div className="text-sm text-secondary">
                                     Sessions
                                 </div>
                             </div>
@@ -421,35 +440,40 @@ export default function Timers({ userId }: TimersProps) {
                     {/* Stopwatch Circle */}
                     <div className="flex justify-center">
                         <div className="relative w-80 h-80">
-                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <svg className="w-full h-full transform -rotate-90 timer-circle" viewBox="0 0 100 100">
                                 <circle
                                     cx="50"
                                     cy="50"
                                     r="45"
-                                    stroke="currentColor"
+                                    stroke="rgba(255,255,255,0.1)"
                                     strokeWidth="2"
                                     fill="none"
-                                    className="text-slate-200 dark:text-slate-700"
                                 />
                                 <circle
                                     cx="50"
                                     cy="50"
                                     r="45"
-                                    stroke="currentColor"
+                                    stroke="url(#blueGradient)"
                                     strokeWidth="2"
                                     fill="none"
                                     strokeDasharray={`${2 * Math.PI * 45}`}
                                     strokeDashoffset={`${2 * Math.PI * 45 * (1 - (focusTime % 3600) / 3600)}`}
-                                    className="text-blue-500 transition-all duration-1000 ease-linear"
+                                    className="transition-all duration-1000 ease-linear"
                                     strokeLinecap="round"
                                 />
+                                <defs>
+                                    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stopColor="#3b82f6" />
+                                        <stop offset="100%" stopColor="#1d4ed8" />
+                                    </linearGradient>
+                                </defs>
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <div className="text-center">
-                                    <div className="text-4xl font-bold text-slate-900 dark:text-white mb-2">
+                                    <div className="text-4xl font-bold text-primary mb-2">
                                         {formatTime(focusTime)}
                                     </div>
-                                    <div className="text-blue-500 font-medium">
+                                    <div className="text-blue-400 font-medium">
                                         {isFocusActive ? 'Running' : 'Stopped'}
                                     </div>
                                 </div>
@@ -461,32 +485,30 @@ export default function Timers({ userId }: TimersProps) {
                     <div className="flex justify-center space-x-4">
                         <button
                             onClick={toggleFocusStopwatch}
-                            className={`flex items-center justify-center w-16 h-16 text-white rounded-full transition-colors shadow-lg
-                                bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-400
-                                shadow-[0_0_16px_2px_rgba(16,185,129,0.4)]`}
+                            className="opal-button w-16 h-16 rounded-full flex items-center justify-center"
                         >
                             {isFocusActive ? <Square size={24} /> : <Play size={24} />}
                         </button>
                         <button
                             onClick={cancelFocusSession}
-                            className="flex items-center justify-center w-16 h-16 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-full transition-colors"
+                            className="opal-button-secondary w-16 h-16 rounded-full flex items-center justify-center"
                         >
                             <X size={24} />
                         </button>
                     </div>
 
                     {/* Audio Settings */}
-                    <div className="zene-card rounded-2xl p-6 border zene-border">
-                        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Ambient Sounds</h3>
+                    <div className="opal-card p-6">
+                        <h3 className="font-semibold text-primary mb-4">Ambient Sounds</h3>
                         <div className="space-y-4">
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 {audioOptions.map((option) => (
                                     <button
                                         key={option.value}
                                         onClick={() => setFocusSelectedAudio(option.value)}
                                         className={`py-3 px-4 rounded-xl font-medium transition-colors ${focusSelectedAudio === option.value
-                                            ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                            ? 'bg-blue-500/20 text-blue-400'
+                                            : 'opal-button-secondary'
                                             }`}
                                     >
                                         {option.label}
@@ -496,7 +518,7 @@ export default function Timers({ userId }: TimersProps) {
 
                             {focusSelectedAudio !== 'none' && (
                                 <div className="flex items-center space-x-3">
-                                    <Volume2 className="text-slate-600 dark:text-slate-400" size={20} />
+                                    <Volume2 className="text-secondary" size={20} />
                                     <input
                                         type="range"
                                         min="0"
@@ -504,9 +526,9 @@ export default function Timers({ userId }: TimersProps) {
                                         step="0.1"
                                         value={focusVolume}
                                         onChange={(e) => setFocusVolume(parseFloat(e.target.value))}
-                                        className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                                        className="flex-1"
                                     />
-                                    <span className="text-sm text-slate-600 dark:text-slate-400 w-8">
+                                    <span className="text-sm text-secondary w-8">
                                         {Math.round(focusVolume * 100)}%
                                     </span>
                                 </div>
@@ -527,4 +549,4 @@ export default function Timers({ userId }: TimersProps) {
             )}
         </div>
     );
-} 
+}
