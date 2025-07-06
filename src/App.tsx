@@ -91,7 +91,7 @@ function App() {
       </main>
 
       {/* Floating Bottom Navigation */}
-      <nav className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 safe-area-bottom">
+      <nav className="fixed bottom-1 left-1/2 transform -translate-x-1/2 z-40 safe-area-bottom">
         <div className="floating-nav-container">
           <div className="flex space-x-1">
             {navigationItems.map((item) => {
