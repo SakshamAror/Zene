@@ -337,7 +337,7 @@ export default function Timers({ userId }: TimersProps) {
                                 <ChevronDown size={16} />
                             </button>
                         </div>
-                        
+
                         {showDurationPicker && (
                             <div className="grid grid-cols-3 gap-3">
                                 {meditationDurations.map((dur) => (

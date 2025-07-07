@@ -116,13 +116,94 @@ input[type="range"]::-moz-range-thumb {
   0% {
     background-position: -200px 0;
   }
+
   100% {
     background-position: calc(200px + 100%) 0;
   }
 }
 
+/* Progress ring animation */
+@keyframes progress-fill {
+  from {
+    stroke-dashoffset: 100%;
+  }
+
+  to {
+    stroke-dashoffset: var(--progress-value);
+  }
+}
+
+/* Floating animation for cards */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Pulse glow effect */
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+  }
+}
+
+/* Confetti animation */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Flame flicker animation for streak fire effect */
+@keyframes flame-flicker {
+
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+
+  20% {
+    transform: scale(1.1) translateY(-2px);
+    opacity: 0.95;
+  }
+
+  40% {
+    transform: scale(0.95) translateY(1px);
+    opacity: 0.9;
+  }
+
+  60% {
+    transform: scale(1.05) translateY(-1px);
+    opacity: 1;
+  }
+
+  80% {
+    transform: scale(1) translateY(0);
+    opacity: 0.97;
+  }
+}
+
 .shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.1) 40px, rgba(255,255,255,0.05) 80px);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.1) 40px, rgba(255, 255, 255, 0.05) 80px);
   background-size: 200px 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -135,6 +216,23 @@ html {
 /* Custom button hover effects */
 .btn-hover {
   @apply transition-all duration-200 transform hover:scale-105 active:scale-95;
+}
+
+/* Animation utility classes */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-confetti {
+  animation: confetti-fall 3s linear forwards;
+}
+
+.progress-ring {
+  animation: progress-fill 1.5s ease-out forwards;
 }
 
 /* Glass morphism effect */
@@ -318,13 +416,13 @@ html {
     padding: 4px;
     margin: 0 16px;
   }
-  
+
   .floating-nav-item {
     width: 40px;
     height: 40px;
     border-radius: 12px;
   }
-  
+
   .floating-nav-item svg {
     width: 18px;
     height: 18px;
@@ -338,13 +436,13 @@ html {
     padding: 3px;
     margin: 0 12px;
   }
-  
+
   .floating-nav-item {
     width: 36px;
     height: 36px;
     border-radius: 10px;
   }
-  
+
   .floating-nav-item svg {
     width: 16px;
     height: 16px;
@@ -357,19 +455,19 @@ html {
     padding-left: 20px;
     padding-right: 20px;
   }
-  
+
   .mobile-text-lg {
     font-size: 18px;
   }
-  
+
   .mobile-text-xl {
     font-size: 20px;
   }
-  
+
   .mobile-text-2xl {
     font-size: 24px;
   }
-  
+
   .mobile-text-3xl {
     font-size: 28px;
   }
@@ -529,8 +627,13 @@ html {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Modal improvements */
@@ -553,7 +656,7 @@ html {
   .safe-area-top {
     padding-top: max(16px, env(safe-area-inset-top));
   }
-  
+
   .safe-area-bottom {
     padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
@@ -565,21 +668,21 @@ html {
     padding: 12px 16px;
     font-size: 14px;
   }
-  
+
   .opal-button {
     padding: 12px 20px;
     font-size: 14px;
   }
-  
+
   .opal-button-secondary {
     padding: 10px 16px;
     font-size: 14px;
   }
-  
+
   .opal-card {
     border-radius: 16px;
   }
-  
+
   .opal-card-dark {
     border-radius: 16px;
   }
@@ -591,12 +694,12 @@ html {
     font-size: 24px;
     line-height: 1.2;
   }
-  
+
   .mobile-text-xl {
     font-size: 18px;
     line-height: 1.3;
   }
-  
+
   .mobile-text-lg {
     font-size: 16px;
     line-height: 1.4;
@@ -608,11 +711,11 @@ html {
   body {
     overflow-x: hidden;
   }
-  
+
   .max-w-4xl {
     max-width: 100%;
   }
-  
+
   .max-w-6xl {
     max-width: 100%;
   }

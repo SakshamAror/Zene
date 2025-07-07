@@ -7,9 +7,10 @@ import Goals from './components/Goals.tsx';
 import Journal from './components/Journal.tsx';
 import Learn from './components/Learn.tsx';
 import Analytics from './components/Analytics.tsx';
-import { Home, Clock, Target, BookOpen, PenTool, BarChart3 } from 'lucide-react';
+import { Home, Clock, Target, BookOpen, PenTool, BarChart3, Settings as SettingsIcon } from 'lucide-react';
+import Settings from './components/Settings';
 
-type View = 'dashboard' | 'timers' | 'goals' | 'journal' | 'learn' | 'analytics';
+type View = 'dashboard' | 'timers' | 'goals' | 'journal' | 'learn' | 'analytics' | 'settings';
 
 function App() {
   const { user, loading, signOut } = useAuth();
@@ -59,13 +60,13 @@ function App() {
     { id: 'goals', label: 'Goals', icon: Target },
     { id: 'journal', label: 'Journal', icon: PenTool },
     { id: 'learn', label: 'Learn', icon: BookOpen },
-    { id: 'analytics', label: 'Insights', icon: BarChart3 },
+    { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 
   const renderCurrentView = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard userId={user.id} user={user} />;
+        return <Dashboard userId={user.id} user={user} setCurrentView={setCurrentView} />;
       case 'timers':
         return <Timers userId={user.id} />;
       case 'goals':
@@ -74,10 +75,10 @@ function App() {
         return <Journal userId={user.id} />;
       case 'learn':
         return <Learn userId={user.id} />;
-      case 'analytics':
-        return <Analytics userId={user.id} />;
+      case 'settings':
+        return <Settings user={user} signOut={signOut} />;
       default:
-        return <Dashboard userId={user.id} user={user} />;
+        return <Dashboard userId={user.id} user={user} setCurrentView={setCurrentView} />;
     }
   };
 

@@ -169,3 +169,32 @@ export async function upsertUserBookStatus({ user_id, book_summary_id, is_favour
   }
   return data && data[0];
 }
+
+// Fetch user preferences from user_prefs table
+export async function getUserPrefs(user_id: string) {
+  const { data, error } = await supabase
+    .from('user_prefs')
+    .select('*')
+    .eq('user_id', user_id)
+    .single();
+  if (error && error.code !== 'PGRST116') { // PGRST116: No rows found
+    console.error('Error fetching user prefs:', error);
+    throw error;
+  }
+  return data;
+}
+
+// Upsert (insert or update) user preferences
+export async function upsertUserPrefs({ user_id, meditation_goal, focus_goal }: { user_id: string, meditation_goal: number, focus_goal: number }) {
+  const { data, error } = await supabase
+    .from('user_prefs')
+    .upsert([
+      { user_id, meditation_goal, focus_goal }
+    ], { onConflict: 'user_id' })
+    .select();
+  if (error) {
+    console.error('Error upserting user prefs:', error);
+    throw error;
+  }
+  return data && data[0];
+}
