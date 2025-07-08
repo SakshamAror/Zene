@@ -324,13 +324,13 @@ export default function Learn({ userId }: LearnProps) {
                 </button>
               </div>
             </div>
-            
+
             <div className="prose prose-invert max-w-none mb-6" style={{ whiteSpace: 'pre-line' }}>
               <p className="text-secondary leading-relaxed text-sm sm:text-base">
                 {selectedBook.summary}
               </p>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <button
                 onClick={() => handleMarkAsRead(selectedBook.id)}

@@ -85,13 +85,12 @@ export default function AuthForm({ onAuthSuccess }: AuthFormProps) {
                 <label className="block text-sm font-semibold text-primary mb-2">
                   Full Name
                 </label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-secondary" size={18} />
+                <div>
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="opal-input w-full pl-12"
+                    className="opal-input w-full"
                     placeholder="Enter your full name"
                     required={isSignUp}
                   />
@@ -103,13 +102,12 @@ export default function AuthForm({ onAuthSuccess }: AuthFormProps) {
               <label className="block text-sm font-semibold text-primary mb-2">
                 Email Address
               </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-secondary" size={18} />
+              <div>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="opal-input w-full pl-12"
+                  className="opal-input w-full"
                   placeholder="Enter your email"
                   required
                 />
@@ -121,12 +119,11 @@ export default function AuthForm({ onAuthSuccess }: AuthFormProps) {
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-secondary" size={18} />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="opal-input w-full pl-12 pr-12"
+                  className="opal-input w-full pr-12"
                   placeholder="Enter your password"
                   required
                   minLength={6}

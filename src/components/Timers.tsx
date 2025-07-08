@@ -46,6 +46,7 @@ export default function Timers({ userId }: TimersProps) {
         { label: 'Forest Sounds', value: 'forest' },
         { label: 'Rain', value: 'rain' },
         { label: 'White Noise', value: 'white-noise' },
+        { label: 'Cafe Ambience', value: 'cafe' },
     ];
 
     // Meditation Timer Effects
@@ -389,7 +390,12 @@ export default function Timers({ userId }: TimersProps) {
                                         step="0.1"
                                         value={volume}
                                         onChange={(e) => setVolume(parseFloat(e.target.value))}
-                                        className="flex-1"
+                                        className="zene-slider flex-1"
+                                        style={{
+                                            '--zene-slider-color': '#10b981',
+                                            '--zene-slider-fill': `${volume * 100}%`,
+                                            'marginTop': '0',
+                                        } as React.CSSProperties}
                                     />
                                     <span className="text-sm text-secondary w-8">
                                         {Math.round(volume * 100)}%
@@ -526,7 +532,12 @@ export default function Timers({ userId }: TimersProps) {
                                         step="0.1"
                                         value={focusVolume}
                                         onChange={(e) => setFocusVolume(parseFloat(e.target.value))}
-                                        className="flex-1"
+                                        className="zene-slider flex-1"
+                                        style={{
+                                            '--zene-slider-color': '#10b981',
+                                            '--zene-slider-fill': `${focusVolume * 100}%`,
+                                            'marginTop': '0',
+                                        } as React.CSSProperties}
                                     />
                                     <span className="text-sm text-secondary w-8">
                                         {Math.round(focusVolume * 100)}%
