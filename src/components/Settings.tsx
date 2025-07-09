@@ -74,72 +74,104 @@ const Settings: React.FC<SettingsProps> = ({ user, signOut }) => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[300px]">
-                <div className="w-8 h-8 loading-spinner"></div>
+            <div className="min-h-screen bg-gradient-to-b from-emerald-900 to-emerald-700 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-12 h-12 loading-spinner mx-auto mb-4"></div>
+                    <p className="text-white/80 font-medium">Loading...</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="max-w-md mx-auto mt-6">
-            {/* Main page title */}
-            <div className="text-center mb-6">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">SETTINGS</h1>
-                <div className="w-full flex justify-center">
-                    <div className="h-px w-full max-w-lg bg-emerald-400/30 mt-4 mb-2"></div>
-                </div>
+        <div className="min-h-screen bg-gradient-to-b from-emerald-900 to-emerald-700 flex flex-col items-center px-6 py-10">
+            {/* Header */}
+            <div className="text-center mb-8">
+                <div className="text-6xl mb-6 animate-float">⚙️</div>
+                <h1 className="text-3xl font-bold text-white mb-3" style={{ letterSpacing: '-0.03em' }}>
+                    Settings
+                </h1>
+                <p className="text-white/80 text-lg max-w-sm mx-auto">
+                    Customize your Zene experience
+                </p>
             </div>
-            <div className="opal-card p-6 sm:p-8">
-                <div className="mb-4">
-                    <label className="block text-sm font-semibold text-primary mb-2">Name</label>
+
+            {/* Settings Form */}
+            <div className="w-full max-w-sm space-y-6">
+                <div>
+                    <label className="block text-white font-semibold mb-2">Name</label>
                     <input
                         type="text"
-                        className="opal-input w-full"
+                        className="w-full py-4 px-6 bg-emerald-900/60 text-white placeholder-emerald-300 rounded-2xl border border-emerald-700 focus:outline-none focus:border-emerald-400 transition"
                         value={name}
                         onChange={e => setName(e.target.value)}
                         placeholder="Your name"
                     />
                 </div>
-                <div className="mb-4">
-                    <label className="block text-sm font-semibold text-primary mb-2">Meditation Goal (minutes/day)</label>
+
+                <div>
+                    <label className="block text-white font-semibold mb-2">
+                        Meditation Goal (minutes/day)
+                    </label>
                     <input
                         type="number"
                         min={1}
-                        className="opal-input w-full"
+                        className="w-full py-4 px-6 bg-emerald-900/60 text-white placeholder-emerald-300 rounded-2xl border border-emerald-700 focus:outline-none focus:border-emerald-400 transition"
                         value={meditationGoalMinutes}
                         onChange={e => setMeditationGoalMinutes(Number(e.target.value))}
                         placeholder="e.g. 30"
                     />
                 </div>
-                <div className="mb-4">
-                    <label className="block text-sm font-semibold text-primary mb-2">Focus Goal (minutes/day)</label>
+
+                <div>
+                    <label className="block text-white font-semibold mb-2">
+                        Focus Goal (minutes/day)
+                    </label>
                     <input
                         type="number"
                         min={1}
-                        className="opal-input w-full"
+                        className="w-full py-4 px-6 bg-emerald-900/60 text-white placeholder-emerald-300 rounded-2xl border border-emerald-700 focus:outline-none focus:border-emerald-400 transition"
                         value={focusGoalMinutes}
                         onChange={e => setFocusGoalMinutes(Number(e.target.value))}
                         placeholder="e.g. 120"
                     />
                 </div>
-                {message && <div className="text-green-400 mb-2 text-sm">{message}</div>}
-                {error && <div className="text-red-400 mb-2 text-sm">{error}</div>}
+
+                {message && (
+                    <div className="text-emerald-300 text-center font-medium">
+                        {message}
+                    </div>
+                )}
+                {error && (
+                    <div className="text-red-400 text-center font-medium">
+                        {error}
+                    </div>
+                )}
+
                 <button
-                    className="opal-button w-full mb-4 rounded-xl"
+                    className="w-full py-4 px-6 bg-emerald-400 text-emerald-900 font-bold text-lg rounded-2xl shadow-lg active:bg-emerald-300 transition disabled:opacity-50"
                     onClick={handleSave}
                     disabled={saving}
                 >
                     {saving ? 'Saving...' : 'Save Changes'}
                 </button>
+
                 <button
-                    className="w-full py-2 rounded-xl border border-red-700 text-red-400 bg-[#18181b] hover:bg-[#232326] transition font-semibold"
+                    className="w-full py-4 px-6 bg-red-500/20 text-red-400 font-semibold rounded-2xl border border-red-500/30 active:bg-red-500/30 transition"
                     onClick={signOut}
                 >
                     Log Out
                 </button>
             </div>
+
+            {/* Motivational Footer */}
+            <div className="mt-12 text-center">
+                <p className="text-white/60 text-sm">
+                    Personalize your path to mindfulness.
+                </p>
+            </div>
         </div>
     );
 };
 
-export default Settings; 
+export default Settings;

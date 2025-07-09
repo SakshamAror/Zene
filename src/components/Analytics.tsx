@@ -32,9 +32,9 @@ export default function Analytics({ userId }: AnalyticsProps) {
       const rect = buttonRef.current.getBoundingClientRect();
       setDropdownStyle({
         position: 'absolute',
-        top: rect.bottom + window.scrollY + 8, // 8px margin
+        top: rect.bottom + window.scrollY + 8,
         left: rect.left + window.scrollX,
-        width: rect.width, // Match button width exactly
+        width: rect.width,
         zIndex: 9999,
       });
     }
@@ -114,13 +114,11 @@ export default function Analytics({ userId }: AnalyticsProps) {
 
       const dayMeditations = filtered.meditations.filter(m => m.date === dateStr);
       const dayWork = filtered.workSessions.filter(w => w.date === dateStr);
-      const dayJournals = filtered.journals.filter(j => j.date === dateStr);
 
       dailyData.push({
         date: dateStr,
         meditation: dayMeditations.reduce((sum, m) => sum + m.length, 0) / 60,
         work: dayWork.reduce((sum, w) => sum + w.length, 0) / 60,
-        hasJournal: dayJournals.length > 0,
       });
     }
 
@@ -139,78 +137,108 @@ export default function Analytics({ userId }: AnalyticsProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 loading-spinner"></div>
+      <div className="min-h-screen bg-gradient-to-b from-emerald-900 to-emerald-700 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 loading-spinner mx-auto mb-4"></div>
+          <p className="text-white/80 font-medium">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Removed Overview card and moved dropdown */}
+    <div className="min-h-screen bg-gradient-to-b from-emerald-900 to-emerald-700 flex flex-col items-center px-6 py-10">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <div className="text-6xl mb-6 animate-float">📊</div>
+        <h1 className="text-3xl font-bold text-white mb-3" style={{ letterSpacing: '-0.03em' }}>
+          Your Progress
+        </h1>
+        <p className="text-white/80 text-lg max-w-sm mx-auto">
+          Track your mindful journey
+        </p>
+      </div>
 
-      {/* Activity Chart */}
-      <div className="opal-card p-6">
-        <div className="flex items-center justify-between mb-6 gap-2">
-          <div className="flex items-center gap-3">
-            <div className="icon-bg icon-bg-blue">
-              <BarChart3 size={20} />
-            </div>
-            <h3 className="mobile-text-xl font-bold text-primary">Daily Activity</h3>
-          </div>
-          <div className="relative">
-            <button
-              ref={buttonRef}
-              onClick={() => setShowTimeRangePicker(!showTimeRangePicker)}
-              className="opal-button-secondary px-4 py-2 flex items-center space-x-2"
+      {/* Time Range Selector */}
+      <div className="w-full max-w-sm mb-8">
+        <div className="relative">
+          <button
+            ref={buttonRef}
+            onClick={() => setShowTimeRangePicker(!showTimeRangePicker)}
+            className="w-full py-4 px-6 bg-emerald-900/60 text-white rounded-2xl border border-emerald-700 focus:outline-none focus:border-emerald-400 transition flex items-center justify-between"
+          >
+            <span>{timeRangeOptions.find(opt => opt.value === timeRange)?.label}</span>
+            <ChevronDown size={20} />
+          </button>
+
+          {showTimeRangePicker && ReactDOM.createPortal(
+            <div
+              ref={dropdownRef}
+              style={dropdownStyle}
+              className="bg-emerald-900/90 backdrop-blur-sm border border-emerald-700 rounded-2xl overflow-hidden shadow-lg"
             >
-              <span>{timeRangeOptions.find(opt => opt.value === timeRange)?.label}</span>
-              <ChevronDown size={16} />
-            </button>
+              {timeRangeOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => {
+                    setTimeRange(option.value);
+                    setShowTimeRangePicker(false);
+                  }}
+                  className={`w-full px-6 py-4 text-left hover:bg-emerald-800/60 transition-colors ${
+                    timeRange === option.value ? 'bg-emerald-400/20 text-emerald-300' : 'text-white'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>,
+            document.body
+          )}
+        </div>
+      </div>
 
-            {showTimeRangePicker && ReactDOM.createPortal(
-              <div
-                ref={dropdownRef}
-                style={dropdownStyle}
-                className="opal-card border border-white/10 rounded-xl overflow-hidden z-50 shadow-lg"
-              >
-                {timeRangeOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => {
-                      setTimeRange(option.value);
-                      setShowTimeRangePicker(false);
-                    }}
-                    className={`w-full px-4 py-3 text-left hover:bg-white/10 transition-colors ${timeRange === option.value ? 'bg-emerald-500/20 text-emerald-400' : 'text-primary'
-                      }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>,
-              document.body
-            )}
+      {/* Stats Overview */}
+      <div className="w-full max-w-sm mb-8">
+        <div className="bg-emerald-900/60 rounded-2xl p-6 border border-emerald-700">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-emerald-300 mb-1">
+                {stats.totalMeditationTime}m
+              </div>
+              <div className="text-sm text-white/70">Meditation</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-300 mb-1">
+                {stats.totalWorkTime}m
+              </div>
+              <div className="text-sm text-white/70">Focus Time</div>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center space-x-6 text-sm">
+      {/* Activity Chart */}
+      <div className="w-full max-w-sm mb-8">
+        <div className="bg-emerald-900/60 rounded-2xl p-6 border border-emerald-700">
+          <h3 className="text-xl font-bold text-white mb-4 text-center">Daily Activity</h3>
+          
+          <div className="flex items-center justify-center space-x-6 mb-4 text-sm">
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-emerald-500 rounded"></div>
-              <span className="text-secondary">Meditation</span>
+              <div className="w-3 h-3 bg-emerald-400 rounded"></div>
+              <span className="text-emerald-300">Meditation</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-500 rounded"></div>
-              <span className="text-secondary">Focus</span>
+              <div className="w-3 h-3 bg-blue-400 rounded"></div>
+              <span className="text-blue-300">Focus</span>
             </div>
           </div>
 
           {timeRange === 'lifetime' ? (
             <div className="flex items-center justify-center h-48">
-              <span className="text-slate-400 dark:text-slate-500 text-lg">Chart unavailable for lifetime view</span>
+              <span className="text-white/60 text-center">Chart unavailable for lifetime view</span>
             </div>
           ) : (
-            <div className="chart-container" style={{ width: '100%', height: 200 }}>
+            <div style={{ width: '100%', height: 200 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dailyActivity} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
@@ -241,33 +269,30 @@ export default function Analytics({ userId }: AnalyticsProps) {
             </div>
           )}
         </div>
+      </div>
 
-        {/* Stats Grid - styled like overview tile */}
-        <div className="zene-card rounded-2xl p-0 flex flex-col md:flex-row items-center justify-center gap-0 overflow-hidden">
-          <div className="flex-1 flex flex-col items-center justify-center py-4">
-            <div className="p-3 bg-emerald-100 dark:bg-emerald-900/20 rounded-xl mb-2">
-              <Clock className="text-emerald-600 dark:text-emerald-400" size={28} />
-            </div>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
-              {stats.totalMeditationTime}m
-            </div>
-            <div className="text-sm text-slate-500 dark:text-slate-400">
-              Total Meditation
-            </div>
-          </div>
-          <div className="w-px h-16 bg-slate-200 dark:bg-slate-700 hidden md:block" />
-          <div className="flex-1 flex flex-col items-center justify-center py-4">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-xl mb-2">
-              <TrendingUp className="text-blue-600 dark:text-blue-400" size={28} />
-            </div>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
-              {stats.totalWorkTime}m
-            </div>
-            <div className="text-sm text-slate-500 dark:text-slate-400">
-              Total Focus Time
-            </div>
+      {/* Additional Stats */}
+      <div className="w-full max-w-sm space-y-4">
+        <div className="bg-emerald-900/60 rounded-2xl p-4 border border-emerald-700">
+          <div className="text-center">
+            <div className="text-xl font-bold text-white mb-1">{stats.journalEntries}</div>
+            <div className="text-sm text-white/70">Journal Entries</div>
           </div>
         </div>
+
+        <div className="bg-emerald-900/60 rounded-2xl p-4 border border-emerald-700">
+          <div className="text-center">
+            <div className="text-xl font-bold text-white mb-1">{stats.goalCompletionRate}%</div>
+            <div className="text-sm text-white/70">Goal Completion</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Motivational Footer */}
+      <div className="mt-12 text-center">
+        <p className="text-white/60 text-sm">
+          Progress, not perfection.
+        </p>
       </div>
     </div>
   );

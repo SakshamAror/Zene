@@ -158,20 +158,17 @@ function App() {
   return (
     <div className="min-h-screen opal-bg">
       {/* Main Content */}
-      <main className="flex-1 mobile-padding py-6 pb-28 safe-area-top">
-        <div className="max-w-6xl mx-auto">
-          {renderCurrentView()}
-        </div>
+      <main className="flex-1 pb-28">
+        {renderCurrentView()}
       </main>
 
       {/* Sync Indicator (mobile only) */}
       <SyncIndicator userId={user.id} />
 
       {/* Floating Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 w-full z-40 flex justify-center" style={{ margin: 0, padding: 0 }}>
-        <div className="w-full sm:w-auto sm:max-w-xl md:max-w-2xl lg:max-w-3xl flex justify-center">
-          <div className="flex-1 flex justify-center bg-emerald-900 border-t border-emerald-600 shadow-[0_-2px_16px_0_rgba(16,185,129,0.10)] sm:rounded-t-2xl sm:rounded-b-none rounded-none" style={{ marginBottom: 0, minHeight: '84px', paddingBottom: 'env(safe-area-inset-bottom, 20px)' }}>
-            <div className="flex flex-row w-full sm:w-auto justify-between items-center px-2 sm:px-6 py-4">
+      <nav className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
+        <div className="bg-emerald-900/90 backdrop-blur-sm border border-emerald-700 rounded-3xl shadow-2xl px-2 py-2">
+          <div className="flex items-center space-x-1">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentView === item.id;
@@ -179,21 +176,20 @@ function App() {
                   <button
                     key={item.id}
                     onClick={() => setCurrentView(item.id as View)}
-                    className={`flex flex-col items-center flex-1 px-2 py-1 transition-all duration-150 ${isActive ? 'text-emerald-200 font-bold' : 'text-emerald-100'} group`}
-                    style={{ position: 'relative' }}
+                    className={`flex flex-col items-center px-3 py-2 rounded-2xl transition-all duration-200 ${
+                      isActive 
+                        ? 'bg-emerald-400 text-emerald-900' 
+                        : 'text-emerald-200 hover:bg-emerald-800/60'
+                    }`}
                     title={item.label}
                   >
-                    <div className={`flex items-center justify-center w-10 h-10 rounded-xl mb-1 ${isActive ? 'bg-emerald-800 border-b-4 border-emerald-300' : ''}`}
-                      style={isActive ? { boxShadow: '0 2px 12px #6ee7b733' } : {}}>
-                      <Icon size={28} />
-                    </div>
-                    <span className={`text-sm mt-0.5 ${isActive ? 'text-emerald-100' : 'text-emerald-100/90'} transition-all font-semibold`}>{item.label}</span>
+                    <Icon size={20} />
+                    <span className="text-xs mt-1 font-medium">{item.label}</span>
                   </button>
                 );
               })}
             </div>
           </div>
-        </div>
       </nav>
     </div>
   );

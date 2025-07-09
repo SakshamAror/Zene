@@ -69,148 +69,132 @@ export default function Goals({ userId }: GoalsProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 loading-spinner"></div>
+      <div className="min-h-screen bg-gradient-to-b from-emerald-900 to-emerald-700 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 loading-spinner mx-auto mb-4"></div>
+          <p className="text-white/80 font-medium">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 mt-6 mb-6">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-900 to-emerald-700 flex flex-col items-center px-6 py-10">
       {/* Header */}
-      <div className="text-center">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">GOALS</h1>
-        <div className="w-full flex justify-center">
-          <div className="h-px w-full max-w-lg bg-emerald-400/30 mt-4 mb-2"></div>
+      <div className="text-center mb-8">
+        <div className="text-6xl mb-6 animate-float">🎯</div>
+        <h1 className="text-3xl font-bold text-white mb-3" style={{ letterSpacing: '-0.03em' }}>
+          Your Goals
+        </h1>
+        <p className="text-white/80 text-lg max-w-sm mx-auto">
+          Set intentions and track your progress
+        </p>
+      </div>
+
+      {/* Progress Overview */}
+      <div className="w-full max-w-sm mb-8">
+        <div className="bg-emerald-900/60 rounded-2xl p-6 border border-emerald-700">
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{pendingGoals.length}</div>
+              <div className="text-sm text-emerald-300">In Progress</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-emerald-400">{completedGoals.length}</div>
+              <div className="text-sm text-emerald-300">Completed</div>
+            </div>
+          </div>
+
+          {goals.length > 0 && (
+            <div>
+              <div className="h-2 bg-emerald-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+                  style={{ width: `${(completedGoals.length / goals.length) * 100}%` }}
+                />
+              </div>
+              <div className="text-center mt-2 text-sm text-emerald-300">
+                {Math.round((completedGoals.length / goals.length) * 100)}% Complete
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Add New Goal */}
-      <div className="opal-card p-4 sm:p-6">
-        <form onSubmit={handleAddGoal} className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+      <div className="w-full max-w-sm mb-8">
+        <form onSubmit={handleAddGoal} className="space-y-4">
           <input
             type="text"
             value={newGoal}
             onChange={(e) => setNewGoal(e.target.value)}
             placeholder="What would you like to achieve?"
-            className="opal-input flex-1 text-sm sm:text-base"
+            className="w-full py-4 px-6 bg-emerald-900/60 text-white placeholder-emerald-300 rounded-2xl border border-emerald-700 focus:outline-none focus:border-emerald-400 transition"
             disabled={saving}
           />
           <button
             type="submit"
             disabled={!newGoal.trim() || saving}
-            className="opal-button flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 sm:py-4 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            className="w-full py-4 px-6 bg-emerald-400 text-emerald-900 font-bold text-lg rounded-2xl shadow-lg active:bg-emerald-300 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             {saving ? (
-              <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-5 h-5 border-2 border-emerald-900 border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <>
-                <Plus size={18} />
-                <span className="hidden sm:inline">Add Goal</span>
-                <span className="sm:hidden">Add</span>
+                <Plus size={20} />
+                <span>Add Goal</span>
               </>
             )}
           </button>
         </form>
       </div>
 
-      {/* Progress Overview */}
-      <div className="opal-card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="mobile-text-xl font-bold text-primary">Progress</h2>
-          <ChevronRight size={20} className="text-secondary" />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-primary">{pendingGoals.length}</div>
-            <div className="text-sm text-secondary">In Progress</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-emerald-400">{completedGoals.length}</div>
-            <div className="text-sm text-secondary">Completed</div>
-          </div>
-        </div>
-
-        {goals.length > 0 && (
-          <div className="mt-4">
-            <div className="progress-bar h-2">
-              <div
-                className="progress-fill h-full"
-                style={{ width: `${(completedGoals.length / goals.length) * 100}%` }}
-              />
-            </div>
-            <div className="text-center mt-2 text-sm text-secondary">
-              {Math.round((completedGoals.length / goals.length) * 100)}% Complete
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Goals List */}
-      <div className="space-y-6">
+      <div className="w-full max-w-sm space-y-6">
         {/* Pending Goals */}
-        <div className="opal-card p-6">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="icon-bg icon-bg-blue">
-              <Target size={20} />
-            </div>
-            <h2 className="mobile-text-xl font-bold text-primary">
+        {pendingGoals.length > 0 && (
+          <div>
+            <h3 className="text-xl font-bold text-white mb-4 text-center">
               In Progress ({pendingGoals.length})
-            </h2>
-          </div>
-
-          {pendingGoals.length > 0 ? (
+            </h3>
             <div className="space-y-3">
               {pendingGoals.map((goal) => (
                 <div
                   key={goal.id}
-                  className="flex items-center space-x-3 p-4 opal-card-dark rounded-2xl"
+                  className="flex items-center space-x-3 p-4 bg-emerald-900/60 rounded-2xl border border-emerald-700"
                 >
                   <button
                     onClick={() => goal.id && handleToggleGoal(goal.id, goal.completed)}
-                    className="w-6 h-6 border-2 border-secondary rounded-full hover:border-emerald-400 transition-colors flex items-center justify-center flex-shrink-0"
+                    className="w-6 h-6 border-2 border-emerald-400 rounded-full hover:bg-emerald-400/20 transition-colors flex items-center justify-center flex-shrink-0"
                   >
                     {goal.completed && <Check size={16} className="text-emerald-400" />}
                   </button>
-                  <span className="flex-1 text-primary text-sm sm:text-base break-words">{goal.goal}</span>
+                  <span className="flex-1 text-white break-words">{goal.goal}</span>
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <Target className="mx-auto text-secondary mb-4" size={48} />
-              <p className="text-secondary">No goals yet</p>
-              <p className="text-sm text-tertiary">Add your first goal above</p>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Completed Goals */}
         {completedGoals.length > 0 && (
-          <div className="opal-card p-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="icon-bg icon-bg-emerald">
-                <Check size={20} />
-              </div>
-              <h2 className="mobile-text-xl font-bold text-primary">
-                Completed ({completedGoals.length})
-              </h2>
-            </div>
-
+          <div>
+            <h3 className="text-xl font-bold text-white mb-4 text-center">
+              Completed ({completedGoals.length})
+            </h3>
             <div className="space-y-3">
               {completedGoals.map((goal) => (
                 <div
                   key={goal.id}
-                  className="flex items-center space-x-3 p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20"
+                  className="flex items-center space-x-3 p-4 bg-emerald-400/20 rounded-2xl border border-emerald-400/30"
                 >
                   <button
                     onClick={() => goal.id && handleToggleGoal(goal.id, goal.completed)}
-                    className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0"
+                    className="w-6 h-6 bg-emerald-400 rounded-full flex items-center justify-center flex-shrink-0"
                   >
-                    <Check size={16} className="text-black" />
+                    <Check size={16} className="text-emerald-900" />
                   </button>
-                  <span className="flex-1 text-secondary line-through text-sm sm:text-base break-words">
+                  <span className="flex-1 text-emerald-200 line-through break-words">
                     {goal.goal}
                   </span>
                 </div>
@@ -218,6 +202,22 @@ export default function Goals({ userId }: GoalsProps) {
             </div>
           </div>
         )}
+
+        {/* Empty State */}
+        {goals.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🌟</div>
+            <h3 className="text-xl font-bold text-white mb-2">No goals yet</h3>
+            <p className="text-white/70">Add your first goal above to get started</p>
+          </div>
+        )}
+      </div>
+
+      {/* Motivational Footer */}
+      <div className="mt-12 text-center">
+        <p className="text-white/60 text-sm">
+          Every goal achieved is a step towards greatness.
+        </p>
       </div>
     </div>
   );

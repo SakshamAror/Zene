@@ -33,6 +33,7 @@ export default function Timers({ userId }: TimersProps) {
     // Current Mode
     const [currentMode, setCurrentMode] = useState<TimerMode>('meditation');
     const [showDurationPicker, setShowDurationPicker] = useState(false);
+    const [showAudioSettings, setShowAudioSettings] = useState(false);
 
     const meditationDurations = [
         { label: '2 min', value: 120 },
@@ -324,134 +325,133 @@ export default function Timers({ userId }: TimersProps) {
     const meditationProgress = ((meditationDuration - meditationTimeLeft) / meditationDuration) * 100;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 mt-6">
+        <div className="min-h-screen bg-gradient-to-b from-emerald-900 to-emerald-700 flex flex-col items-center justify-center px-6 py-10">
             {/* Header */}
-            <div className="text-center">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">FOCUS</h1>
-                <div className="w-full flex justify-center">
-                    <div className="h-px w-full max-w-lg bg-emerald-400/30 mt-4 mb-2"></div>
+            <div className="text-center mb-8">
+                <div className="text-6xl mb-6 animate-float">
+                    {currentMode === 'meditation' ? '🧘' : '🎯'}
+                </div>
+                <h1 className="text-3xl font-bold text-white mb-3" style={{ letterSpacing: '-0.03em' }}>
+                    {currentMode === 'meditation' ? 'Meditation' : 'Focus Session'}
+                </h1>
+                <p className="text-white/80 text-lg max-w-sm mx-auto">
+                    {currentMode === 'meditation' 
+                        ? 'Find your inner peace and clarity'
+                        : 'Deep work for maximum productivity'
+                    }
+                </p>
+            </div>
+
+            {/* Mode Toggle */}
+            <div className="flex bg-emerald-900/60 rounded-2xl p-2 mb-8 border border-emerald-700">
+                <button
+                    onClick={() => setCurrentMode('meditation')}
+                    className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+                        currentMode === 'meditation'
+                            ? 'bg-emerald-400 text-emerald-900'
+                            : 'text-emerald-200'
+                    }`}
+                >
+                    Meditation
+                </button>
+                <button
+                    onClick={() => setCurrentMode('focus')}
+                    className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+                        currentMode === 'focus'
+                            ? 'bg-emerald-400 text-emerald-900'
+                            : 'text-emerald-200'
+                    }`}
+                >
+                    Focus
+                </button>
+            </div>
+
+            {/* Timer/Stopwatch Circle */}
+            <div className="relative w-80 h-80 mb-12">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        stroke="rgba(255,255,255,0.1)"
+                        strokeWidth="2"
+                        fill="none"
+                    />
+                    <circle
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        stroke={currentMode === 'meditation' ? "#a7f3d0" : "#60a5fa"}
+                        strokeWidth="2"
+                        fill="none"
+                        strokeDasharray={`${2 * Math.PI * 45}`}
+                        strokeDashoffset={
+                            currentMode === 'meditation'
+                                ? `${2 * Math.PI * 45 * (1 - meditationProgress / 100)}`
+                                : `${2 * Math.PI * 45 * (1 - (focusTime % 3600) / 3600)}`
+                        }
+                        className="transition-all duration-1000 ease-linear"
+                        strokeLinecap="round"
+                    />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="text-4xl font-bold text-white mb-2">
+                            {currentMode === 'meditation' 
+                                ? formatTime(meditationTimeLeft)
+                                : formatTime(focusTime)
+                            }
+                        </div>
+                        <div className={`font-medium ${
+                            currentMode === 'meditation' ? 'text-emerald-300' : 'text-blue-300'
+                        }`}>
+                            {currentMode === 'meditation'
+                                ? isMeditationCompleted 
+                                    ? 'Complete!' 
+                                    : isMeditationActive 
+                                        ? 'Breathe...' 
+                                        : 'Ready'
+                                : isFocusActive 
+                                    ? 'Focusing...' 
+                                    : 'Ready'
+                            }
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Mode Tabs */}
-            <div className="flex justify-center">
-                <div className="opal-card p-2">
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={() => setCurrentMode('meditation')}
-                            className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-colors ${currentMode === 'meditation'
-                                ? 'bg-emerald-500/20 text-emerald-400'
-                                : 'text-secondary hover:text-primary'
-                                }`}
-                        >
-                            <Clock size={20} />
-                            <span>Meditation</span>
-                        </button>
-                        <button
-                            onClick={() => setCurrentMode('focus')}
-                            className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-colors ${currentMode === 'focus'
-                                ? 'bg-blue-500/20 text-blue-400'
-                                : 'text-secondary hover:text-primary'
-                                }`}
-                        >
-                            <Target size={20} />
-                            <span>Focus</span>
-                        </button>
-                    </div>
-                </div>
+            {/* Controls */}
+            <div className="flex space-x-4 mb-8">
+                <button
+                    onClick={currentMode === 'meditation' ? toggleMeditationTimer : toggleFocusStopwatch}
+                    className="w-16 h-16 bg-emerald-400 text-emerald-900 rounded-full flex items-center justify-center shadow-lg active:bg-emerald-300 transition"
+                >
+                    {(currentMode === 'meditation' ? isMeditationActive : isFocusActive) 
+                        ? <Square size={24} /> 
+                        : <Play size={24} />
+                    }
+                </button>
+                <button
+                    onClick={currentMode === 'meditation' ? cancelMeditationTimer : cancelFocusSession}
+                    className="w-16 h-16 bg-emerald-900/60 text-emerald-200 rounded-full flex items-center justify-center border border-emerald-700 active:bg-emerald-800 transition"
+                >
+                    <X size={24} />
+                </button>
             </div>
 
-            {/* Meditation Timer */}
-            {currentMode === 'meditation' && (
-                <div className="space-y-8">
-                    {/* Timer Circle */}
-                    <div className="flex justify-center">
-                        <div className="relative w-80 h-80">
-                            <svg className="w-full h-full transform -rotate-90 timer-circle" viewBox="0 0 100 100">
-                                <circle
-                                    cx="50"
-                                    cy="50"
-                                    r="45"
-                                    stroke="rgba(255,255,255,0.1)"
-                                    strokeWidth="2"
-                                    fill="none"
-                                />
-                                <circle
-                                    cx="50"
-                                    cy="50"
-                                    r="45"
-                                    stroke="url(#emeraldGradient)"
-                                    strokeWidth="2"
-                                    fill="none"
-                                    strokeDasharray={`${2 * Math.PI * 45}`}
-                                    strokeDashoffset={`${2 * Math.PI * 45 * (1 - meditationProgress / 100)}`}
-                                    className="transition-all duration-1000 ease-linear"
-                                    strokeLinecap="round"
-                                />
-                                <defs>
-                                    <linearGradient id="emeraldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" stopColor="#10b981" />
-                                        <stop offset="100%" stopColor="#14b8a6" />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="text-center">
-                                    <div className="text-4xl font-bold text-primary mb-2">
-                                        {formatTime(meditationTimeLeft)}
-                                    </div>
-                                    {isMeditationCompleted && (
-                                        <div className="text-emerald-400 font-medium">
-                                            Session Complete!
-                                        </div>
-                                    )}
-                                    {!isMeditationActive && !isMeditationCompleted && (
-                                        <div className="text-emerald-400 font-medium">
-                                            Stopped
-                                        </div>
-                                    )}
-                                    {isMeditationActive && !isMeditationCompleted && (
-                                        <div className="text-emerald-400 font-medium">
-                                            Running
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Controls */}
-                    <div className="flex justify-center space-x-4">
+            {/* Settings */}
+            <div className="w-full max-w-sm space-y-4">
+                {currentMode === 'meditation' && (
+                    <div className="text-center">
                         <button
-                            onClick={toggleMeditationTimer}
-                            disabled={meditationTimeLeft === 0 && !isMeditationCompleted}
-                            className="opal-button w-16 h-16 rounded-full flex items-center justify-center disabled:opacity-50"
+                            onClick={() => setShowDurationPicker(!showDurationPicker)}
+                            className="py-3 px-6 bg-emerald-900/60 text-emerald-200 font-semibold rounded-xl border border-emerald-700 active:bg-emerald-800 transition"
                         >
-                            {isMeditationActive ? <Square size={24} /> : <Play size={24} />}
+                            Duration: {Math.floor(meditationDuration / 60)} min
                         </button>
-                        <button
-                            onClick={cancelMeditationTimer}
-                            className="opal-button-secondary w-16 h-16 rounded-full flex items-center justify-center"
-                        >
-                            <X size={24} />
-                        </button>
-                    </div>
-
-                    {/* Duration Selection */}
-                    <div className="opal-card p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold text-primary">Duration</h3>
-                            <button
-                                onClick={() => setShowDurationPicker(!showDurationPicker)}
-                                className="opal-button-secondary px-4 py-2 flex items-center space-x-2"
-                            >
-                                <span>{Math.floor(meditationDuration / 60)} min</span>
-                                <ChevronDown size={16} />
-                            </button>
-                        </div>
-
+                        
                         {showDurationPicker && (
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="mt-4 grid grid-cols-3 gap-3">
                                 {meditationDurations.map((dur) => (
                                     <button
                                         key={dur.value}
@@ -460,10 +460,11 @@ export default function Timers({ userId }: TimersProps) {
                                             setShowDurationPicker(false);
                                         }}
                                         disabled={isMeditationActive}
-                                        className={`py-3 px-4 rounded-xl font-medium transition-colors ${meditationDuration === dur.value
-                                            ? 'bg-emerald-500/20 text-emerald-400'
-                                            : 'opal-button-secondary'
-                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        className={`py-2 px-3 rounded-xl font-medium transition-all ${
+                                            meditationDuration === dur.value
+                                                ? 'bg-emerald-400 text-emerald-900'
+                                                : 'bg-emerald-900/60 text-emerald-200 border border-emerald-700'
+                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
                                     >
                                         {dur.label}
                                     </button>
@@ -471,193 +472,95 @@ export default function Timers({ userId }: TimersProps) {
                             </div>
                         )}
                     </div>
+                )}
 
-                    {/* Audio Settings */}
-                    <div className="opal-card p-6">
-                        <h3 className="font-semibold text-primary mb-4">Ambient Sounds</h3>
-                        <div className="space-y-4">
+                <div className="text-center">
+                    <button
+                        onClick={() => setShowAudioSettings(!showAudioSettings)}
+                        className="py-3 px-6 bg-emerald-900/60 text-emerald-200 font-semibold rounded-xl border border-emerald-700 active:bg-emerald-800 transition"
+                    >
+                        Ambient Sounds
+                    </button>
+                    
+                    {showAudioSettings && (
+                        <div className="mt-4 space-y-4">
                             <div className="grid grid-cols-2 gap-3">
                                 {audioOptions.map((option) => (
                                     <button
                                         key={option.value}
-                                        onClick={() => setSelectedAudio(option.value)}
-                                        className={`py-3 px-4 rounded-xl font-medium transition-colors ${selectedAudio === option.value
-                                            ? 'bg-emerald-500/20 text-emerald-400'
-                                            : 'opal-button-secondary'
-                                            }`}
+                                        onClick={() => {
+                                            if (currentMode === 'meditation') {
+                                                setSelectedAudio(option.value);
+                                            } else {
+                                                setFocusSelectedAudio(option.value);
+                                            }
+                                        }}
+                                        className={`py-2 px-3 rounded-xl font-medium transition-all ${
+                                            (currentMode === 'meditation' ? selectedAudio : focusSelectedAudio) === option.value
+                                                ? 'bg-emerald-400 text-emerald-900'
+                                                : 'bg-emerald-900/60 text-emerald-200 border border-emerald-700'
+                                        }`}
                                     >
                                         {option.label}
                                     </button>
                                 ))}
                             </div>
 
-                            {selectedAudio !== 'none' && (
+                            {((currentMode === 'meditation' && selectedAudio !== 'none') || 
+                              (currentMode === 'focus' && focusSelectedAudio !== 'none')) && (
                                 <div className="flex items-center space-x-3">
-                                    <Volume2 className="text-secondary" size={20} />
+                                    <Volume2 className="text-emerald-300" size={20} />
                                     <input
                                         type="range"
                                         min="0"
                                         max="1"
                                         step="0.01"
-                                        value={volume}
-                                        onChange={(e) => setVolume(parseFloat(e.target.value))}
+                                        value={currentMode === 'meditation' ? volume : focusVolume}
+                                        onChange={(e) => {
+                                            if (currentMode === 'meditation') {
+                                                setVolume(parseFloat(e.target.value));
+                                            } else {
+                                                setFocusVolume(parseFloat(e.target.value));
+                                            }
+                                        }}
                                         className="zene-slider flex-1"
                                         style={{
-                                            '--zene-slider-color': '#10b981',
-                                            '--zene-slider-fill': `${volume * 100}%`,
-                                            'boxShadow': 'none',
-                                            'height': '6px',
-                                            'borderRadius': '3px',
+                                            '--zene-slider-color': currentMode === 'meditation' ? '#a7f3d0' : '#60a5fa',
+                                            '--zene-slider-fill': `${(currentMode === 'meditation' ? volume : focusVolume) * 100}%`,
                                         } as React.CSSProperties}
                                     />
-                                    <span className="text-sm text-secondary w-8">
-                                        {Math.round(volume * 100)}%
+                                    <span className="text-sm text-emerald-300 w-8">
+                                        {Math.round((currentMode === 'meditation' ? volume : focusVolume) * 100)}%
                                     </span>
                                 </div>
                             )}
                         </div>
-                    </div>
-
-                    {/* Audio Element */}
-                    {selectedAudio !== 'none' && (
-                        <audio
-                            ref={meditationAudioRef}
-                            loop
-                            preload="auto"
-                            src={`/audio/${selectedAudio}.mp3`}
-                        />
-                    )}
-                    {/* Guided Meditation Audio */}
-                    <audio
-                        ref={guidedAudioRef}
-                        preload="auto"
-                        src="/audio/guided-meditation.mp3"
-                    />
-                </div>
-            )}
-
-            {/* Focus Stopwatch */}
-            {currentMode === 'focus' && (
-                <div className="space-y-8">
-                    {/* Session Info */}
-
-                    {/* Stopwatch Circle */}
-                    <div className="flex justify-center">
-                        <div className="relative w-80 h-80">
-                            <svg className="w-full h-full transform -rotate-90 timer-circle" viewBox="0 0 100 100">
-                                <circle
-                                    cx="50"
-                                    cy="50"
-                                    r="45"
-                                    stroke="rgba(255,255,255,0.1)"
-                                    strokeWidth="2"
-                                    fill="none"
-                                />
-                                <circle
-                                    cx="50"
-                                    cy="50"
-                                    r="45"
-                                    stroke="url(#blueGradient)"
-                                    strokeWidth="2"
-                                    fill="none"
-                                    strokeDasharray={`${2 * Math.PI * 45}`}
-                                    strokeDashoffset={`${2 * Math.PI * 45 * (1 - (focusTime % 3600) / 3600)}`}
-                                    className="transition-all duration-1000 ease-linear"
-                                    strokeLinecap="round"
-                                />
-                                <defs>
-                                    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" stopColor="#3b82f6" />
-                                        <stop offset="100%" stopColor="#1d4ed8" />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="text-center">
-                                    <div className="text-4xl font-bold text-primary mb-2">
-                                        {formatTime(focusTime)}
-                                    </div>
-                                    <div className="text-blue-400 font-medium">
-                                        {isFocusActive ? 'Running' : 'Stopped'}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Controls */}
-                    <div className="flex justify-center space-x-4">
-                        <button
-                            onClick={toggleFocusStopwatch}
-                            className="opal-button w-16 h-16 rounded-full flex items-center justify-center"
-                        >
-                            {isFocusActive ? <Square size={24} /> : <Play size={24} />}
-                        </button>
-                        <button
-                            onClick={cancelFocusSession}
-                            className="opal-button-secondary w-16 h-16 rounded-full flex items-center justify-center"
-                        >
-                            <X size={24} />
-                        </button>
-                    </div>
-
-                    {/* Audio Settings */}
-                    <div className="opal-card p-6">
-                        <h3 className="font-semibold text-primary mb-4">Ambient Sounds</h3>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                                {audioOptions.map((option) => (
-                                    <button
-                                        key={option.value}
-                                        onClick={() => setFocusSelectedAudio(option.value)}
-                                        className={`py-3 px-4 rounded-xl font-medium transition-colors ${focusSelectedAudio === option.value
-                                            ? 'bg-blue-500/20 text-blue-400'
-                                            : 'opal-button-secondary'
-                                            }`}
-                                    >
-                                        {option.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {focusSelectedAudio !== 'none' && (
-                                <div className="flex items-center space-x-3">
-                                    <Volume2 className="text-blue-400" size={20} />
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="1"
-                                        step="0.01"
-                                        value={focusVolume}
-                                        onChange={(e) => setFocusVolume(parseFloat(e.target.value))}
-                                        className="zene-slider flex-1"
-                                        style={{
-                                            '--zene-slider-color': '#3b82f6',
-                                            '--zene-slider-fill': `${focusVolume * 100}%`,
-                                            'boxShadow': 'none',
-                                            'height': '6px',
-                                            'borderRadius': '3px',
-                                        } as React.CSSProperties}
-                                    />
-                                    <span className="text-sm text-blue-400 w-8">
-                                        {Math.round(focusVolume * 100)}%
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Audio Element */}
-                    {focusSelectedAudio !== 'none' && (
-                        <audio
-                            ref={focusAudioRef}
-                            loop
-                            preload="auto"
-                            src={`/audio/${focusSelectedAudio}.mp3`}
-                        />
                     )}
                 </div>
+            </div>
+
+            {/* Audio Elements */}
+            {selectedAudio !== 'none' && (
+                <audio
+                    ref={meditationAudioRef}
+                    loop
+                    preload="auto"
+                    src={`/audio/${selectedAudio}.mp3`}
+                />
             )}
+            {focusSelectedAudio !== 'none' && (
+                <audio
+                    ref={focusAudioRef}
+                    loop
+                    preload="auto"
+                    src={`/audio/${focusSelectedAudio}.mp3`}
+                />
+            )}
+            <audio
+                ref={guidedAudioRef}
+                preload="auto"
+                src="/audio/guided-meditation.mp3"
+            />
         </div>
     );
 }
