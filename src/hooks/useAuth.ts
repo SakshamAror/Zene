@@ -21,7 +21,12 @@ export function useAuth() {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Fallback: force loading to false after 5 seconds
+    const timeout = setTimeout(() => setLoading(false), 5000);
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
@@ -33,4 +38,8 @@ export function useAuth() {
     loading,
     signOut,
   };
+
+  useEffect(() => {
+    console.log('useAuth state', { user, loading });
+  }, [user, loading]);
 }

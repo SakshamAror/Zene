@@ -81,10 +81,15 @@ const Settings: React.FC<SettingsProps> = ({ user, signOut }) => {
     }
 
     return (
-        <div className="max-w-md mx-auto mt-8">
+        <div className="max-w-md mx-auto mt-6">
+            {/* Main page title */}
+            <div className="text-center mb-6">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">SETTINGS</h1>
+                <div className="w-full flex justify-center">
+                    <div className="h-px w-full max-w-lg bg-emerald-400/30 mt-4 mb-2"></div>
+                </div>
+            </div>
             <div className="opal-card p-6 sm:p-8">
-                <h2 className="text-xl font-bold text-primary mb-4">Settings</h2>
-                <div className="border-b border-white/10 mb-6"></div>
                 <div className="mb-4">
                     <label className="block text-sm font-semibold text-primary mb-2">Name</label>
                     <input

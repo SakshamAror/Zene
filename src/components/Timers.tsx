@@ -10,13 +10,15 @@ type TimerMode = 'meditation' | 'focus';
 
 export default function Timers({ userId }: TimersProps) {
     // Meditation Timer State
-    const [meditationDuration, setMeditationDuration] = useState(300); // 5 minutes default
+    const [meditationDuration, setMeditationDuration] = useState(120); // 2 minutes default
     const [meditationTimeLeft, setMeditationTimeLeft] = useState(meditationDuration);
     const [isMeditationActive, setIsMeditationActive] = useState(false);
     const [isMeditationCompleted, setIsMeditationCompleted] = useState(false);
     const [selectedAudio, setSelectedAudio] = useState('none');
     const [volume, setVolume] = useState(0.5);
     const meditationAudioRef = useRef<HTMLAudioElement | null>(null);
+    const guidedAudioRef = useRef<HTMLAudioElement | null>(null);
+    const [guidedPlaying, setGuidedPlaying] = useState(false);
     const meditationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     // Focus Stopwatch State
@@ -33,6 +35,7 @@ export default function Timers({ userId }: TimersProps) {
     const [showDurationPicker, setShowDurationPicker] = useState(false);
 
     const meditationDurations = [
+        { label: '2 min', value: 120 },
         { label: '5 min', value: 300 },
         { label: '10 min', value: 600 },
         { label: '15 min', value: 900 },
@@ -91,6 +94,108 @@ export default function Timers({ userId }: TimersProps) {
             meditationAudioRef.current.pause();
         }
     }, [selectedAudio, isMeditationActive, volume]);
+
+    // Start guided meditation and background sound when meditation starts
+    useEffect(() => {
+        if (currentMode === 'meditation' && isMeditationActive && meditationTimeLeft === meditationDuration) {
+            // Start background sound (if selected)
+            if (selectedAudio !== 'none' && meditationAudioRef.current) {
+                meditationAudioRef.current.currentTime = 0;
+                meditationAudioRef.current.volume = 0.3;
+                meditationAudioRef.current.loop = true;
+                meditationAudioRef.current.play();
+            }
+            // Start guided meditation
+            if (guidedAudioRef.current) {
+                guidedAudioRef.current.currentTime = 0;
+                guidedAudioRef.current.volume = 0.0;
+                guidedAudioRef.current.loop = false;
+                guidedAudioRef.current.play();
+                setGuidedPlaying(true);
+                // Smoothly fade in guided audio
+                let v = 0.0;
+                const target = 0.3;
+                const step = 0.05;
+                const interval = setInterval(() => {
+                    if (!guidedAudioRef.current) return;
+                    v = Math.min(target, v + step);
+                    guidedAudioRef.current.volume = v;
+                    if (v >= target) clearInterval(interval);
+                }, 60);
+                setTimeout(() => clearInterval(interval), 2000);
+            }
+        }
+    }, [isMeditationActive, meditationTimeLeft, currentMode]);
+
+    // When guided meditation ends, smoothly ramp up background sound
+    useEffect(() => {
+        if (!guidedPlaying && isMeditationActive && selectedAudio !== 'none' && meditationAudioRef.current) {
+            let v = meditationAudioRef.current.volume;
+            const target = volume;
+            const step = 0.02;
+            const interval = setInterval(() => {
+                if (!meditationAudioRef.current) return;
+                v = Math.min(target, v + step);
+                meditationAudioRef.current.volume = v;
+                if (v >= target) clearInterval(interval);
+            }, 60);
+            return () => clearInterval(interval);
+        }
+    }, [guidedPlaying, isMeditationActive, selectedAudio, volume]);
+
+    // Guided meditation end event
+    useEffect(() => {
+        const audio = guidedAudioRef.current;
+        if (!audio) return;
+        const onEnded = () => setGuidedPlaying(false);
+        audio.addEventListener('ended', onEnded);
+        return () => audio.removeEventListener('ended', onEnded);
+    }, []);
+
+    // Stop and reset both audios on stop/cancel
+    const stopAllMeditationAudio = () => {
+        if (meditationAudioRef.current) {
+            meditationAudioRef.current.pause();
+            meditationAudioRef.current.currentTime = 0;
+        }
+        if (guidedAudioRef.current) {
+            guidedAudioRef.current.pause();
+            guidedAudioRef.current.currentTime = 0;
+        }
+        setGuidedPlaying(false);
+    };
+
+    // Helper to fade out and stop both audios
+    const fadeOutAndStopAudios = () => {
+        const fade = (audioRef: React.RefObject<HTMLAudioElement>) => {
+            if (!audioRef.current) return Promise.resolve();
+            return new Promise<void>(resolve => {
+                let v = audioRef.current!.volume;
+                const step = 0.05;
+                const interval = setInterval(() => {
+                    if (!audioRef.current) {
+                        clearInterval(interval);
+                        resolve();
+                        return;
+                    }
+                    v = Math.max(0, v - step);
+                    audioRef.current.volume = v;
+                    if (v <= 0) {
+                        if (audioRef.current) {
+                            audioRef.current.pause();
+                            audioRef.current.currentTime = 0;
+                        }
+                        clearInterval(interval);
+                        resolve();
+                    }
+                }, 60);
+            });
+        };
+        return Promise.all([
+            fade(meditationAudioRef),
+            fade(guidedAudioRef)
+        ]);
+    };
 
     // Focus Stopwatch Effects
     useEffect(() => {
@@ -169,10 +274,7 @@ export default function Timers({ userId }: TimersProps) {
             setIsMeditationActive(false);
             setMeditationTimeLeft(meditationDuration);
             setIsMeditationCompleted(false);
-            if (meditationAudioRef.current) {
-                meditationAudioRef.current.pause();
-                meditationAudioRef.current.currentTime = 0;
-            }
+            fadeOutAndStopAudios().then(() => stopAllMeditationAudio());
         } else {
             // Start button pressed
             setIsMeditationActive(true);
@@ -183,10 +285,7 @@ export default function Timers({ userId }: TimersProps) {
         setIsMeditationActive(false);
         setMeditationTimeLeft(meditationDuration);
         setIsMeditationCompleted(false);
-        if (meditationAudioRef.current) {
-            meditationAudioRef.current.pause();
-            meditationAudioRef.current.currentTime = 0;
-        }
+        fadeOutAndStopAudios().then(() => stopAllMeditationAudio());
     };
 
     const toggleFocusStopwatch = () => {
@@ -225,11 +324,13 @@ export default function Timers({ userId }: TimersProps) {
     const meditationProgress = ((meditationDuration - meditationTimeLeft) / meditationDuration) * 100;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-8 mt-6">
             {/* Header */}
             <div className="text-center">
-                <h1 className="mobile-text-3xl font-bold text-primary mb-2">Focus</h1>
-                <p className="text-secondary">Meditation and focus tools</p>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">FOCUS</h1>
+                <div className="w-full flex justify-center">
+                    <div className="h-px w-full max-w-lg bg-emerald-400/30 mt-4 mb-2"></div>
+                </div>
             </div>
 
             {/* Mode Tabs */}
@@ -279,7 +380,7 @@ export default function Timers({ userId }: TimersProps) {
                                     cx="50"
                                     cy="50"
                                     r="45"
-                                    stroke="url(#gradient)"
+                                    stroke="url(#emeraldGradient)"
                                     strokeWidth="2"
                                     fill="none"
                                     strokeDasharray={`${2 * Math.PI * 45}`}
@@ -288,7 +389,7 @@ export default function Timers({ userId }: TimersProps) {
                                     strokeLinecap="round"
                                 />
                                 <defs>
-                                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <linearGradient id="emeraldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                                         <stop offset="0%" stopColor="#10b981" />
                                         <stop offset="100%" stopColor="#14b8a6" />
                                     </linearGradient>
@@ -302,6 +403,16 @@ export default function Timers({ userId }: TimersProps) {
                                     {isMeditationCompleted && (
                                         <div className="text-emerald-400 font-medium">
                                             Session Complete!
+                                        </div>
+                                    )}
+                                    {!isMeditationActive && !isMeditationCompleted && (
+                                        <div className="text-emerald-400 font-medium">
+                                            Stopped
+                                        </div>
+                                    )}
+                                    {isMeditationActive && !isMeditationCompleted && (
+                                        <div className="text-emerald-400 font-medium">
+                                            Running
                                         </div>
                                     )}
                                 </div>
@@ -387,14 +498,16 @@ export default function Timers({ userId }: TimersProps) {
                                         type="range"
                                         min="0"
                                         max="1"
-                                        step="0.1"
+                                        step="0.01"
                                         value={volume}
                                         onChange={(e) => setVolume(parseFloat(e.target.value))}
                                         className="zene-slider flex-1"
                                         style={{
                                             '--zene-slider-color': '#10b981',
                                             '--zene-slider-fill': `${volume * 100}%`,
-                                            'marginTop': '0',
+                                            'boxShadow': 'none',
+                                            'height': '6px',
+                                            'borderRadius': '3px',
                                         } as React.CSSProperties}
                                     />
                                     <span className="text-sm text-secondary w-8">
@@ -414,6 +527,12 @@ export default function Timers({ userId }: TimersProps) {
                             src={`/audio/${selectedAudio}.mp3`}
                         />
                     )}
+                    {/* Guided Meditation Audio */}
+                    <audio
+                        ref={guidedAudioRef}
+                        preload="auto"
+                        src="/audio/guided-meditation.mp3"
+                    />
                 </div>
             )}
 
@@ -421,27 +540,6 @@ export default function Timers({ userId }: TimersProps) {
             {currentMode === 'focus' && (
                 <div className="space-y-8">
                     {/* Session Info */}
-                    <div className="opal-card p-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                                <div className="icon-bg icon-bg-blue">
-                                    <Target size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-primary">Focus Session</h3>
-                                    <p className="text-sm text-secondary">Track your focused work time</p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <div className="text-2xl font-bold text-primary">
-                                    {focusSessions}
-                                </div>
-                                <div className="text-sm text-secondary">
-                                    Sessions
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     {/* Stopwatch Circle */}
                     <div className="flex justify-center">
@@ -524,22 +622,24 @@ export default function Timers({ userId }: TimersProps) {
 
                             {focusSelectedAudio !== 'none' && (
                                 <div className="flex items-center space-x-3">
-                                    <Volume2 className="text-secondary" size={20} />
+                                    <Volume2 className="text-blue-400" size={20} />
                                     <input
                                         type="range"
                                         min="0"
                                         max="1"
-                                        step="0.1"
+                                        step="0.01"
                                         value={focusVolume}
                                         onChange={(e) => setFocusVolume(parseFloat(e.target.value))}
                                         className="zene-slider flex-1"
                                         style={{
-                                            '--zene-slider-color': '#10b981',
+                                            '--zene-slider-color': '#3b82f6',
                                             '--zene-slider-fill': `${focusVolume * 100}%`,
-                                            'marginTop': '0',
+                                            'boxShadow': 'none',
+                                            'height': '6px',
+                                            'borderRadius': '3px',
                                         } as React.CSSProperties}
                                     />
-                                    <span className="text-sm text-secondary w-8">
+                                    <span className="text-sm text-blue-400 w-8">
                                         {Math.round(focusVolume * 100)}%
                                     </span>
                                 </div>

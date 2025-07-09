@@ -1,26 +1,26 @@
 export interface MeditationSession {
-  id?: number;
+  id?: number | string;
   user_id: string;
   length: number; // in seconds
   date: string; // ISO date string (YYYY-MM-DD)
 }
 
 export interface WorkSession {
-  id?: number;
+  id?: number | string;
   user_id: string;
   length: number; // in seconds
   date: string; // ISO date string (YYYY-MM-DD)
 }
 
 export interface JournalLog {
-  id?: number;
+  id?: number | string;
   user_id: string;
   log: string;
   date: string; // ISO date string (YYYY-MM-DD)
 }
 
 export interface Goal {
-  id?: number;
+  id?: number | string;
   user_id: string;
   goal: string;
   completed: boolean;

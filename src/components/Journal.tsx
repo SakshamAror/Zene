@@ -99,11 +99,13 @@ export default function Journal({ userId }: JournalProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 mt-6">
       {/* Header */}
       <div className="text-center">
-        <h1 className="mobile-text-3xl font-bold text-primary mb-2">Journal</h1>
-        <p className="text-secondary">Reflect on your thoughts and experiences</p>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">JOURNAL</h1>
+        <div className="w-full flex justify-center">
+          <div className="h-px w-full max-w-lg bg-emerald-400/30 mt-4 mb-2"></div>
+        </div>
       </div>
 
       {/* Date Navigation */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BookOpen, Heart, Star, Search, X } from 'lucide-react';
 import { getBookSummaries, getUserBookStatus, upsertUserBookStatus } from '../lib/saveData';
 import type { BookSummary, UserBookStatus } from '../types';
@@ -14,6 +14,15 @@ export default function Learn({ userId }: LearnProps) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [loading, setLoading] = useState(true);
   const [selectedBook, setSelectedBook] = useState<BookSummary | null>(null);
+  const [visibleReadCount, setVisibleReadCount] = useState(5);
+  const readSummariesContainerRef = useRef<HTMLDivElement>(null);
+  const [visibleBookCount, setVisibleBookCount] = useState(5);
+  const [visibleBookCountDesktop, setVisibleBookCountDesktop] = useState(6);
+  const bookSummariesContainerRef = useRef<HTMLDivElement>(null);
+  const bookSummariesGridRef = useRef<HTMLDivElement>(null);
+
+  // Utility to check if screen is md+ (desktop/tablet)
+  const isDesktop = () => window.matchMedia('(min-width: 768px)').matches;
 
   useEffect(() => {
     loadData();
@@ -102,6 +111,67 @@ export default function Learn({ userId }: LearnProps) {
       return bFav - aFav;
     });
 
+  useEffect(() => {
+    setVisibleBookCount(5); // Reset when filteredBooks changes (mobile)
+    setVisibleBookCountDesktop(6); // Reset for desktop
+  }, [filteredBooks.length, searchTerm, selectedCategory]);
+
+  // Mobile horizontal scroll incremental loading
+  useEffect(() => {
+    if (isDesktop()) return; // Only run on mobile
+    const handleScroll = () => {
+      const container = bookSummariesContainerRef.current;
+      if (!container) return;
+      if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 10) {
+        setVisibleBookCount((prev) =>
+          prev + 5 > filteredBooks.length ? filteredBooks.length : prev + 5
+        );
+      }
+    };
+    const container = bookSummariesContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+    }
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [filteredBooks.length]);
+
+  // Desktop grid load more handler
+  const handleLoadMoreDesktop = () => {
+    setVisibleBookCountDesktop((prev) =>
+      prev + 6 > filteredBooks.length ? filteredBooks.length : prev + 6
+    );
+  };
+
+  useEffect(() => {
+    setVisibleReadCount(5); // Reset when readSummaries changes
+  }, [readSummaries.length]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const container = readSummariesContainerRef.current;
+      if (!container) return;
+      if (container.scrollTop + container.clientHeight >= container.scrollHeight - 10) {
+        // Near bottom, load more
+        setVisibleReadCount((prev) =>
+          prev + 5 > readSummaries.length ? readSummaries.length : prev + 5
+        );
+      }
+    };
+    const container = readSummariesContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+    }
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [readSummaries.length]);
+
   const isBookRead = (bookId: string) => {
     return !!userBookStatus.find(status => status.book_summary_id === bookId && status.read_at);
   };
@@ -139,102 +209,201 @@ export default function Learn({ userId }: LearnProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 mt-6">
       {/* Header */}
       <div className="text-center">
-        <h1 className="mobile-text-3xl font-bold text-primary mb-2">Learn</h1>
-        <p className="text-secondary">Discover wisdom through curated book summaries</p>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">LEARN</h1>
+        <div className="w-full flex justify-center">
+          <div className="h-px w-full max-w-lg bg-emerald-400/30 mt-4 mb-2"></div>
+        </div>
       </div>
 
       {/* Search and Filters */}
       <div className="opal-card p-4 sm:p-6">
         <div className="flex flex-col space-y-4">
           <div className="relative">
-            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-secondary" size={18} />
-            <input
-              type="text"
-              placeholder="Search books..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="opal-input w-full pl-10 sm:pl-12 text-sm sm:text-base"
-            />
+            <div className="flex items-center opal-input w-full px-4 py-2">
+              <input
+                type="text"
+                placeholder="Search books..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none text-base text-white placeholder:text-gray-400"
+              />
+              <Search size={18} className="ml-2 text-secondary flex-shrink-0" />
+            </div>
           </div>
 
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="opal-input text-sm sm:text-base"
-          >
-            {categories.map(category => (
-              <option key={category} value={category}>
-                {category === 'all' ? 'All Categories' : category}
-              </option>
-            ))}
-          </select>
+          <div className="relative w-full bg-[#10201b] rounded-2xl">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="opal-input custom-select text-sm sm:text-base w-full pr-10 bg-transparent"
+            >
+              {categories.map(category => (
+                <option key={category} value={category}>
+                  {category === 'all' ? 'All Categories' : category}
+                </option>
+              ))}
+            </select>
+            <span className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 text-white">
+              <svg width="20" height="20" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Books Grid */}
       {filteredBooks.length > 0 ? (
-        <div className="grid gap-4">
-          {filteredBooks.map((book) => (
-            <div
-              key={book.id}
-              onClick={() => handleBookClick(book)}
-              className="opal-card p-4 sm:p-6 hover:bg-white/10 transition-all cursor-pointer"
-            >
-              <div className="flex items-start justify-between mb-4 gap-3">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg sm:mobile-text-lg font-bold text-primary mb-2 line-clamp-2">
-                    {book.title}
-                  </h3>
-                  {book.category && (
-                    <span className="inline-block px-2 sm:px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs sm:text-sm font-medium rounded-full">
-                      {book.category}
-                    </span>
-                  )}
-                </div>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleToggleFavourite(book.id);
-                  }}
-                  className={`p-2 rounded-xl transition-colors flex-shrink-0 ${isBookFavourited(book.id)
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'opal-button-secondary hover:text-red-400'
-                    }`}
-                >
-                  <Heart size={18} fill={isBookFavourited(book.id) ? 'currentColor' : 'none'} />
-                </button>
-              </div>
-
-              <p className="text-secondary text-xs sm:text-sm leading-relaxed line-clamp-3">
-                {book.summary}
-              </p>
-
-              <div className="mt-4 pt-4 border-t border-white/10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <BookOpen className="text-secondary" size={14} />
-                    <span className="text-xs sm:text-sm text-secondary">
-                      Book Summary
-                    </span>
+        <>
+          {/* Mobile: horizontal scroll */}
+          <div
+            ref={bookSummariesContainerRef}
+            className="flex overflow-x-auto gap-4 pb-2 md:hidden custom-scrollbar-horizontal"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            {filteredBooks.slice(0, visibleBookCount).map((book) => (
+              <div
+                key={book.id}
+                onClick={() => handleBookClick(book)}
+                className="opal-card p-4 sm:p-6 hover:bg-white/10 transition-all cursor-pointer flex-shrink-0 w-80 min-w-0"
+              >
+                <div className="flex items-start justify-between mb-4 gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg sm:mobile-text-lg font-bold text-primary mb-2 line-clamp-2">
+                      {book.title}
+                    </h3>
+                    {book.category && (
+                      <span className="inline-block px-2 sm:px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs sm:text-sm font-medium rounded-full">
+                        {book.category}
+                      </span>
+                    )}
                   </div>
 
-                  {isBookFavourited(book.id) && (
-                    <div className="flex items-center space-x-1">
-                      <Star className="text-yellow-400" size={14} fill="currentColor" />
-                      <span className="text-xs text-yellow-400">
-                        Favourited
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleFavourite(book.id);
+                    }}
+                    className={`p-2 rounded-xl transition-colors flex-shrink-0 ${isBookFavourited(book.id)
+                      ? 'bg-red-500/20 text-red-400'
+                      : 'opal-button-secondary hover:text-red-400'
+                      }`}
+                  >
+                    <Heart size={18} fill={isBookFavourited(book.id) ? 'currentColor' : 'none'} />
+                  </button>
+                </div>
+
+                <p className="text-secondary text-xs sm:text-sm leading-relaxed line-clamp-3">
+                  {book.summary}
+                </p>
+
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <BookOpen className="text-secondary" size={14} />
+                      <span className="text-xs sm:text-sm text-secondary">
+                        Book Summary
                       </span>
                     </div>
-                  )}
+
+                    {isBookFavourited(book.id) && (
+                      <div className="flex items-center space-x-1">
+                        <Star className="text-yellow-400" size={14} fill="currentColor" />
+                        <span className="text-xs text-yellow-400">
+                          Favourited
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+            ))}
+            {visibleBookCount < filteredBooks.length && (
+              <>
+                {visibleBookCount + 5 < filteredBooks.length ? (
+                  <div className="flex items-center justify-center w-80 text-secondary text-xs">Scroll to load more...</div>
+                ) : null}
+              </>
+            )}
+          </div>
+          {/* Desktop: grid with load more button */}
+          <div className="hidden md:block">
+            <div
+              className="grid grid-cols-2 lg:grid-cols-3 gap-4"
+            >
+              {filteredBooks.slice(0, visibleBookCountDesktop).map((book) => (
+                <div
+                  key={book.id}
+                  onClick={() => handleBookClick(book)}
+                  className="opal-card p-4 sm:p-6 hover:bg-white/10 transition-all cursor-pointer min-w-0"
+                >
+                  <div className="flex items-start justify-between mb-4 gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg sm:mobile-text-lg font-bold text-primary mb-2 line-clamp-2">
+                        {book.title}
+                      </h3>
+                      {book.category && (
+                        <span className="inline-block px-2 sm:px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs sm:text-sm font-medium rounded-full">
+                          {book.category}
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleFavourite(book.id);
+                      }}
+                      className={`p-2 rounded-xl transition-colors flex-shrink-0 ${isBookFavourited(book.id)
+                        ? 'bg-red-500/20 text-red-400'
+                        : 'opal-button-secondary hover:text-red-400'
+                        }`}
+                    >
+                      <Heart size={18} fill={isBookFavourited(book.id) ? 'currentColor' : 'none'} />
+                    </button>
+                  </div>
+
+                  <p className="text-secondary text-xs sm:text-sm leading-relaxed line-clamp-3">
+                    {book.summary}
+                  </p>
+
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <BookOpen className="text-secondary" size={14} />
+                        <span className="text-xs sm:text-sm text-secondary">
+                          Book Summary
+                        </span>
+                      </div>
+
+                      {isBookFavourited(book.id) && (
+                        <div className="flex items-center space-x-1">
+                          <Star className="text-yellow-400" size={14} fill="currentColor" />
+                          <span className="text-xs text-yellow-400">
+                            Favourited
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            {visibleBookCountDesktop < filteredBooks.length && (
+              <div className="flex justify-center mt-4">
+                <button
+                  onClick={handleLoadMoreDesktop}
+                  className="opal-button px-6 py-2 text-base"
+                >
+                  Load More
+                </button>
+              </div>
+            )}
+          </div>
+        </>
       ) : (
         <div className="text-center py-12">
           <BookOpen className="mx-auto text-secondary mb-4" size={64} />
@@ -254,8 +423,12 @@ export default function Learn({ userId }: LearnProps) {
       {readSummaries.length > 0 && (
         <div className="opal-card p-4 sm:p-6">
           <h2 className="mobile-text-xl font-bold text-primary mb-4">Your Read Summaries</h2>
-          <div className="grid gap-3">
-            {readSummaries.map((book) => (
+          <div
+            ref={readSummariesContainerRef}
+            className="flex flex-col gap-3 max-h-96 overflow-y-auto custom-scrollbar"
+            style={{ minHeight: '120px' }}
+          >
+            {readSummaries.slice(0, visibleReadCount).map((book) => (
               <div
                 key={book.id}
                 onClick={() => handleBookClick(book)}
@@ -275,6 +448,9 @@ export default function Learn({ userId }: LearnProps) {
                 </div>
               </div>
             ))}
+            {visibleReadCount < readSummaries.length && (
+              <div className="text-center text-secondary py-2 text-xs">Scroll to load more...</div>
+            )}
           </div>
         </div>
       )}

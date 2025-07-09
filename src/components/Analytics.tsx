@@ -147,12 +147,17 @@ export default function Analytics({ userId }: AnalyticsProps) {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* No header or sub-heading */}
+      {/* Removed Overview card and moved dropdown */}
 
-      {/* Time Range Selector */}
+      {/* Activity Chart */}
       <div className="opal-card p-6">
-        <div className="flex items-center justify-between">
-          <h2 className="mobile-text-xl font-bold text-primary">Overview</h2>
+        <div className="flex items-center justify-between mb-6 gap-2">
+          <div className="flex items-center gap-3">
+            <div className="icon-bg icon-bg-blue">
+              <BarChart3 size={20} />
+            </div>
+            <h3 className="mobile-text-xl font-bold text-primary">Daily Activity</h3>
+          </div>
           <div className="relative">
             <button
               ref={buttonRef}
@@ -186,16 +191,6 @@ export default function Analytics({ userId }: AnalyticsProps) {
               document.body
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Activity Chart */}
-      <div className="opal-card p-6">
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="icon-bg icon-bg-blue">
-            <BarChart3 size={20} />
-          </div>
-          <h3 className="mobile-text-xl font-bold text-primary">Daily Activity</h3>
         </div>
 
         <div className="space-y-4">

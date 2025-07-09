@@ -32,7 +32,6 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
   });
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('7d');
-  const [showConfetti, setShowConfetti] = useState(false);
   const [meditationGoal, setMeditationGoal] = useState(30);
   const [focusGoal, setFocusGoal] = useState(120);
   const [prefsLoading, setPrefsLoading] = useState(true);
@@ -135,12 +134,6 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
         todayWork: Math.round(workSessions.filter(w => w.date === todayStr).reduce((sum, session) => sum + session.length, 0) / 60),
         journalToday: journals.some(j => j.date === todayStr),
       });
-
-      // Show confetti for milestone streaks
-      if (newStreak > 0 && (newStreak % 7 === 0 || newStreak % 30 === 0)) {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 3000);
-      }
 
       // Combine recent activities
       const activities = [
@@ -293,73 +286,20 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
   const recommendation = getQuickActionRecommendation();
 
   return (
-    <div className="min-h-screen opal-bg">
-      {/* Confetti Animation */}
-      {showConfetti && (
-        <div className="fixed inset-0 pointer-events-none z-50">
-          {[...Array(50)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute animate-bounce"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${1 + Math.random() * 2}s`,
-              }}
-            >
-              <Sparkles size={12} className="text-yellow-400" />
-            </div>
-          ))}
-        </div>
-      )}
-
+    <div className="min-h-screen">
       {/* Hero Section */}
-      <div className="px-6 py-8">
+      <div className="mt-6">
         {/* Greeting */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
-            Make the most of your day
-          </h1>
-          <p className="text-emerald-300 text-lg font-medium animate-pulse">
-            Great minds don't wander, they conquer
-          </p>
-        </div>
-      </div>
-
-      {/* Smart Recommendation */}
-      <div className="px-6 mb-8">
-        <div className="opal-card rounded-xl p-6 border-l-4 border-emerald-500/50">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-              <Heart className="w-6 h-6 text-emerald-400" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-white font-semibold mb-2">Smart Suggestion</h3>
-              <p className="text-gray-300 mb-3">
-                {recommendation === 'meditation' && "Start your day with a calming meditation session to set the right tone."}
-                {recommendation === 'focus' && "Ready to tackle your most important tasks? Start a focused work session."}
-                {recommendation === 'journal' && "Take a moment to reflect on your day and capture your thoughts."}
-                {recommendation === 'learn' && "Expand your mind with some new insights and knowledge."}
-              </p>
-              <button
-                onClick={() => setCurrentView(recommendation === 'meditation' || recommendation === 'focus' ? 'timers' : recommendation)}
-                className="inline-flex items-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-4 py-2 rounded-lg transition-colors"
-              >
-                <Play className="w-4 h-4" />
-                Get Started
-              </button>
-            </div>
+        <div className="text-center mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-2">HOMEPAGE</h1>
+          <div className="w-full flex justify-center">
+            <div className="h-px w-full max-w-lg bg-emerald-400/30 mt-4 mb-2"></div>
           </div>
         </div>
       </div>
 
       {/* Today's Progress Rings */}
       <div className="px-6 mb-8">
-        <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-emerald-400" />
-          Today's Progress
-        </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {/* Meditation Progress Ring (pressable) */}
           <div
@@ -411,28 +351,33 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
               <div className="absolute inset-0" style={{ zIndex: 1 }}>
                 {(() => {
                   const maxFlames = 35;
-                  const flameCount = Math.min(maxFlames, Math.max(0, stats.streak));
+                  const minSize = 20;
+                  const maxSize = 62; // 20 + 35*1.2 (previous max)
+                  const minGlow = 0.5;
+                  const maxGlow = 1.0;
+                  const k = 12; // Controls curve steepness; tune as needed
+                  // Exponential progress for all flame properties
+                  const progress = 1 - Math.exp(-Math.max(0, stats.streak) / k);
+                  const flameCount = Math.round(maxFlames * progress);
                   const flames = [];
-                  function seededRandom(seed: number) {
-                    let x = Math.sin(seed) * 10000;
-                    return x - Math.floor(x);
-                  }
                   let placed = 0;
                   let attempts = 0;
                   const minAngle = -225 * Math.PI / 180;
                   const maxAngle = 45 * Math.PI / 180;
                   while (placed < flameCount && attempts < flameCount * 3) {
-                    const rand = seededRandom(stats.streak * 100 + placed * 31 + attempts * 17);
+                    const rand = Math.random();
                     // angle from -125deg to +125deg
                     const angle = minAngle + rand * (maxAngle - minAngle);
                     if (angle >= minAngle && angle <= maxAngle) {
                       const radius = 48;
                       const x = 40 + radius * Math.cos(angle);
                       const y = 40 + radius * Math.sin(angle);
-                      const size = 20 + Math.min(stats.streak, maxFlames) * 1.2;
+                      // Exponential size
+                      const size = minSize + (maxSize - minSize) * progress;
                       // Lower flames: less bright and more transparent
                       const vertical = Math.sin(angle); // -1 (top) to +1 (bottom)
-                      const glow = 0.5 + 0.5 * (stats.streak / maxFlames) * (1 - 0.5 * (vertical > 0.3 ? vertical : 0));
+                      // Exponential glow/brightness
+                      const glow = minGlow + (maxGlow - minGlow) * progress * (1 - 0.5 * (vertical > 0.3 ? vertical : 0));
                       const opacity = vertical > 0.3 ? 0.5 : 1; // dimmer if lower
                       flames.push(
                         <span
@@ -520,9 +465,8 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
               const hasGoalToday = stats.todayMeditation > 0 || stats.todayWork > 0;
               if (!hasGoalToday && stats.streak > 0) {
                 return (
-                  <div className="flex items-center justify-center gap-1 mt-2">
-                    <span className="text-orange-500 text-lg animate-pulse" title="Streak at risk!">🔥</span>
-                    <span className="text-xs font-semibold text-orange-500">Don't lose your streak!</span>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 mt-3 sm:mt-2 text-center">
+                    <span className="text-sm sm:text-xs font-semibold animate-pulse text-orange-500 leading-tight">Streak at risk!</span>
                   </div>
                 );
               }
@@ -609,7 +553,7 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
       </div>
 
       {/* Full Analytics Section */}
-      <div className="px-6">
+      <div className="">
         <Analytics userId={userId} />
       </div>
     </div>

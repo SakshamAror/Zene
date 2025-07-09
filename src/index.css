@@ -8,13 +8,23 @@
   box-sizing: border-box;
 }
 
+/* Title character spacing */
+.font-bold.text-primary,
+.font-bold.text-white,
+h1.font-bold,
+h2.font-bold,
+h3.font-bold {
+  letter-spacing: -0.02em;
+}
+
 body,
 html {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #181c20;
+  background: linear-gradient(to bottom, #064e3b 0%, #047857 50%);
+  background-color: #00332d;
   color: #fff;
   /* Increase base text brightness */
 }
@@ -277,32 +287,24 @@ html {
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-/* Opal-inspired design system */
-.opal-bg {
-  background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.1) 0%, rgba(0, 0, 0, 1) 70%);
-  min-height: 100vh;
-}
-
 .opal-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
-  box-shadow: 0 4px 32px rgba(16, 185, 129, 0.12), 0 0 12px #10b98133;
 }
 
 .opal-card-dark {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 20px;
-  box-shadow: 0 4px 32px rgba(59, 130, 246, 0.12), 0 0 12px #60a5fa33;
 }
 
 .opal-button {
-  background: linear-gradient(135deg, #a7f3d0, #5eead4);
+  background: linear-gradient(135deg, rgba(167, 243, 208, 1), rgba(94, 234, 212, 1));
   color: #000;
   font-weight: 600;
   border-radius: 16px;
@@ -319,11 +321,6 @@ html {
 
 .opal-button:active {
   transform: translateY(0);
-}
-
-.opal-button:focus,
-.opal-button:active {
-  box-shadow: 0 0 0 4px #10b98155, 0 0 16px #10b981cc;
 }
 
 .opal-button-secondary {
@@ -347,7 +344,7 @@ html {
 }
 
 .opal-input {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 16px 20px;
@@ -764,12 +761,30 @@ html {
   }
 }
 
+/* Hide scrollbar on mobile only */
+@media (max-width: 768px) {
+
+  html,
+  body {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Zene custom slider styles */
 .zene-slider {
   width: 100%;
-  height: 4px;
+  height: 6px;
   background: transparent;
   appearance: none;
+  border-radius: 3px;
 }
 
 .zene-slider:focus {
@@ -777,61 +792,59 @@ html {
 }
 
 .zene-slider::-webkit-slider-runnable-track {
-  background: linear-gradient(to right, var(--zene-slider-color, #10b981) 0%, var(--zene-slider-color, #10b981) var(--zene-slider-fill, 0%), #333 var(--zene-slider-fill, 0%), #333 100%);
-  box-shadow: 0 2px 8px #10b98133;
+  background: linear-gradient(to right, var(--zene-slider-color, #10b981) 0%, var(--zene-slider-color, #10b981) var(--zene-slider-fill, 0%), #222 var(--zene-slider-fill, 0%), #222 100%);
+  height: 6px;
+  border-radius: 3px;
 }
 
 .zene-slider::-webkit-slider-thumb {
   appearance: none;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: var(--zene-slider-color, #10b981);
-  box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.25), 0 2px 8px #10b98155;
-  border: 2px solid #222;
-  cursor: pointer;
+  background: var(--zene-slider-color, #10b981) !important;
+  border: 2px solid #111;
+  box-shadow: 0 2px 6px #10b98133;
+  margin-top: -7px;
   transition: background 0.2s;
-  margin-top: -8px;
 }
 
 .zene-slider:active::-webkit-slider-thumb {
-  background: var(--zene-slider-color, #059669);
+  background: var(--zene-slider-color, #059669) !important;
 }
 
 .zene-slider::-moz-range-thumb {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: var(--zene-slider-color, #10b981);
-  box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.25), 0 2px 8px #10b98155;
-  border: 2px solid #222;
-  cursor: pointer;
+  background: var(--zene-slider-color, #10b981) !important;
+  border: 2px solid #111;
+  box-shadow: 0 2px 6px #10b98133;
   transition: background 0.2s;
-  margin-top: -8px;
 }
 
 .zene-slider:active::-moz-range-thumb {
-  background: var(--zene-slider-color, #059669);
+  background: var(--zene-slider-color, #059669) !important;
 }
 
 .zene-slider::-ms-fill-lower {
   background: var(--zene-slider-color, #10b981);
+  border-radius: 3px;
 }
 
 .zene-slider::-ms-fill-upper {
   background: #222;
+  border-radius: 3px;
 }
 
 .zene-slider::-ms-thumb {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: var(--zene-slider-color, #10b981);
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
-  border: 2px solid #222;
-  cursor: pointer;
+  background: var(--zene-slider-color, #10b981) !important;
+  border: 2px solid #111;
+  box-shadow: 0 2px 6px #10b98133;
   transition: background 0.2s;
-  margin-top: 0;
 }
 
 .zene-slider:focus::-ms-fill-lower {
@@ -846,7 +859,6 @@ html {
   display: none;
 }
 
-/* Hide the outline for Firefox */
 .zene-slider::-moz-focus-outer {
   border: 0;
 }
@@ -854,4 +866,51 @@ html {
 /* Add a subtle glow to icons */
 .lucide-react {
   filter: drop-shadow(0 2px 8px #10b98133);
+}
+
+/* Custom select for hiding default arrow */
+.custom-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: none;
+  background-color: transparent;
+  position: relative;
+  z-index: 1;
+}
+
+.custom-select::-ms-expand {
+  display: none;
+}
+
+.opal-input.bg-transparent {
+  background: transparent !important;
+}
+
+.custom-scrollbar-horizontal {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 255, 200, 0.2) transparent;
+  transition: scrollbar-color 0.3s;
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar {
+  height: 6px;
+  background: transparent;
+  transition: background 0.3s;
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar-thumb {
+  background: rgba(100, 255, 200, 0.2);
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+.custom-scrollbar-horizontal:hover::-webkit-scrollbar-thumb,
+.custom-scrollbar-horizontal:active::-webkit-scrollbar-thumb,
+.custom-scrollbar-horizontal:focus::-webkit-scrollbar-thumb {
+  background: rgba(52, 211, 153, 0.5);
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar-thumb:window-inactive {
+  background: rgba(100, 255, 200, 0.1);
 }
