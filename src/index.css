@@ -23,8 +23,8 @@ html {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(to bottom, #064e3b 0%, #047857 100%);
-  background-attachment: fixed;
+  background: linear-gradient(to bottom, #047857 10%, #064e3b 75%);
+  background-color: #064e3b;
   color: #fff;
 }
 
@@ -888,26 +888,29 @@ html {
 
 .custom-scrollbar-horizontal {
   scrollbar-width: thin;
-  scrollbar-color: rgba(100, 255, 200, 0.2) transparent;
-  transition: scrollbar-color 0.3s;
+  scrollbar-color: #34d399 #1e293b;
 }
 
-.custom-scrollbar-horizontal::-webkit-scrollbar {
-  height: 6px;
-  background: transparent;
-  transition: background 0.3s;
+@media (max-width: 640px) {
+  .custom-scrollbar-horizontal {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    overflow: -moz-scrollbars-none;
+  }
+
+  /* Do NOT hide the scrollbar with display: none; let the browser handle it */
 }
 
-.custom-scrollbar-horizontal::-webkit-scrollbar-thumb {
-  background: rgba(100, 255, 200, 0.2);
-  border-radius: 4px;
-  transition: background 0.3s;
-}
+@media (min-width: 641px) {
+  .custom-scrollbar-horizontal::-webkit-scrollbar {
+    height: 6px;
+    background: #1e293b;
+  }
 
-.custom-scrollbar-horizontal:hover::-webkit-scrollbar-thumb,
-.custom-scrollbar-horizontal:active::-webkit-scrollbar-thumb,
-.custom-scrollbar-horizontal:focus::-webkit-scrollbar-thumb {
-  background: rgba(52, 211, 153, 0.5);
+  .custom-scrollbar-horizontal::-webkit-scrollbar-thumb {
+    background: #34d399;
+    border-radius: 4px;
+  }
 }
 
 .custom-scrollbar-horizontal::-webkit-scrollbar-thumb:window-inactive {

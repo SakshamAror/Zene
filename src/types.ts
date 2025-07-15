@@ -2,21 +2,21 @@ export interface MeditationSession {
   id?: number | string;
   user_id: string;
   length: number; // in seconds
-  date: string; // ISO date string (YYYY-MM-DD)
+  timestamp: string; // ISO 8601 string with timezone
 }
 
 export interface WorkSession {
   id?: number | string;
   user_id: string;
   length: number; // in seconds
-  date: string; // ISO date string (YYYY-MM-DD)
+  timestamp: string; // ISO 8601 string with timezone
 }
 
 export interface JournalLog {
   id?: number | string;
   user_id: string;
   log: string;
-  date: string; // ISO date string (YYYY-MM-DD)
+  timestamp: string; // ISO 8601 string with timezone
 }
 
 export interface Goal {
@@ -24,12 +24,12 @@ export interface Goal {
   user_id: string;
   goal: string;
   completed: boolean;
-  date_created: string; // ISO date string (YYYY-MM-DD)
+  timestamp: string; // ISO 8601 string with timezone
 }
 
 // Frontend-only interfaces for display
 export interface DisplayMeditationSession {
-  date: string;
+  timestamp: string;
   duration: number;
   completed: boolean;
   startTime: number;
@@ -43,12 +43,12 @@ export interface DisplayGoal {
 }
 
 export interface DisplayJournalEntry {
-  date: string;
+  timestamp: string;
   content: string;
 }
 
 export interface DisplayWorkSession {
-  date: string;
+  timestamp: string;
   duration: number;
   audioType: string;
 }
@@ -59,7 +59,7 @@ export interface UserBookStatus {
   user_id: string;
   book_summary_id: string;
   is_favourite: boolean;
-  read_at: string;
+  timestamp: string;
 }
 
 // BookSummary for Learn page
@@ -68,4 +68,15 @@ export interface BookSummary {
   title: string;
   summary: string;
   category?: string;
+}
+
+// Voice message to future self
+export interface VoiceMessage {
+  id?: number | string;
+  user_id: string;
+  audio_url: string; // URL to the audio file
+  reminder_date: string; // ISO 8601 string for when to show the reminder
+  created_at: string; // ISO 8601 string when the message was created
+  title?: string; // Optional title for the message
+  played?: boolean; // Whether the user has played this message
 }

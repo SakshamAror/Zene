@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { upsertUserPrefs } from '../lib/saveData';
+import { supabase } from '../lib/supabase';
+import { User } from '@supabase/supabase-js';
+import { Emoji } from './Emoji';
 
 interface OnboardingProps {
+    userId: string;
     onComplete: (goals: { meditation: number; focus: number; mainGoal: string }) => void;
 }
 
 const defaultMeditation = 2;
 const defaultFocus = 120;
 const goalOptions = [
-    { key: 'focus', label: 'Focus Better', emoji: '🎯' },
-    { key: 'mindfulness', label: 'Be Mindful', emoji: '🧘' },
-    { key: 'learn', label: 'Learn & Grow', emoji: '📚' },
-    { key: 'relax', label: 'Relax More', emoji: '🌿' },
+    { key: 'focus', label: 'Focus Better', emoji: 'goal' },
+    { key: 'mindfulness', label: 'Be Mindful', emoji: 'mindfulness' },
+    { key: 'learn', label: 'Learn & Grow', emoji: 'book' },
+    { key: 'relax', label: 'Relax More', emoji: 'relax' },
 ];
 
 const steps = [
@@ -18,55 +23,49 @@ const steps = [
         type: 'welcome',
         title: "Welcome to Zene!",
         description: "Your personal space for focus, growth, and mindfulness.",
-        image: '🧘',
+        image: 'mindfulness', // 🧘
     },
     {
         type: 'goal',
         title: "What brings you to Zene?",
-        description: "Pick your main goal. You can change this anytime!",
-        image: '✨',
+        description: "Pick your main goal.",
+        image: 'sparkle', // ✨
     },
     {
         type: 'why',
         title: "How Zene Helps",
         description: "Zene helps you meditate, focus, and journal—so you can grow every day.",
-        image: '🌱',
+        image: 'leaf', // 🌱
     },
     {
         type: 'try',
         title: "Let's start with a quick meditation session!",
         description: "",
-        image: '🌊',
+        image: 'mindfulness', // 🧘 (was 'wave', should be mindfulness for meditation)
     },
     {
         type: 'meditation',
         title: "Set Your Meditation Goal",
-        description: "How many minutes would you like to meditate daily? (You can change this later!)",
-        image: '🕯️',
+        description: "How many minutes would you like to meditate daily?",
+        image: 'candle', // 🕯️
     },
     {
         type: 'focus',
         title: "Set Your Focus Goal",
-        description: "How many minutes would you like to focus each day? (You can change this later!)",
-        image: '🎯',
-    },
-    {
-        type: 'comparison',
-        title: 'A Better Day with Zene',
-        description: '',
-        image: '',
+        description: "How many minutes would you like to focus each day?",
+        image: 'goal', // 🎯
     },
     {
         type: 'summary',
         title: "",
         description: "Your free trial is active.",
-        image: '🚀',
+        image: 'rocket', // 🚀
     },
 ];
 
 const sampleAudio = '/public/audio/forest.mp3'; // Use a short, non-intrusive sound
 
-export default function Onboarding({ onComplete }: OnboardingProps) {
+export default function Onboarding({ userId, onComplete }: OnboardingProps) {
     const [step, setStep] = useState(0);
     const [meditationGoal, setMeditationGoal] = useState(defaultMeditation);
     const [focusGoal, setFocusGoal] = useState(defaultFocus);
@@ -78,6 +77,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     const oceanAudioRef = React.useRef<HTMLAudioElement>(null);
     const guidedAudioRef = React.useRef<HTMLAudioElement>(null);
     const [guidedPlaying, setGuidedPlaying] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     // Start ocean and guided meditation sound only when timer is started
     React.useEffect(() => {
@@ -195,8 +195,19 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             }
         }
     };
-    const handleNextWithReset = () => {
+    const handleNextWithReset = async () => {
         if (steps[step].type === 'summary') {
+            if (!userId) {
+                alert('User ID is missing. Please log in again.');
+                return;
+            }
+            setLoading(true);
+            await upsertUserPrefs({
+                user_id: userId,
+                meditation_goal: meditationGoal,
+                focus_goal: focusGoal,
+                main_goal: mainGoal
+            });
             onComplete({ meditation: meditationGoal, focus: focusGoal, mainGoal });
         } else {
             setStep(step + 1);
@@ -216,20 +227,50 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     const progress = (step + 1) / steps.length * 100;
 
     return (
-        <div className="fixed inset-0 z-50 bg-gradient-to-b from-emerald-900 to-emerald-700 flex flex-col items-center justify-center px-6 py-10 text-center">
-            {/* Progress Bar */}
+        <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10">
+            {/* Progress Bar - always visible */}
             <div className="w-full max-w-xs h-2 bg-white/10 rounded-full mb-6 overflow-hidden">
                 <div className="h-2 bg-emerald-400 rounded-full transition-all" style={{ width: `${progress}%` }}></div>
             </div>
             <div className="flex-1 flex flex-col items-center justify-center w-full">
-                <div className="text-6xl mb-6 select-none animate-float">{steps[step].image}</div>
-                {/* Only render title/description if not the comparison step and not the summary step */}
-                {steps[step].type !== 'comparison' && steps[step].type !== 'summary' && (
+                {/* For step image: */}
+                <div className="w-16 h-16 mb-6 flex items-center justify-center mx-auto animate-float">
+                    {steps[step].type === 'try' ? (
+                        <Emoji emoji={getStepEmoji(steps[step].image)} png="wave.png" alt={steps[step].image} size="3xl" />
+                    ) : (
+                        <Emoji emoji={getStepEmoji(steps[step].image)} png={`${steps[step].image}.png`} alt={steps[step].image} size="3xl" />
+                    )}
+                </div>
+                {/* Only render title/description if not the summary step */}
+                {steps[step].type !== 'summary' && (
                     <>
-                        <h1 className="text-2xl font-bold text-white mb-3" style={{ letterSpacing: '-0.03em' }}>{steps[step].title}</h1>
-                        <p className="text-white/80 text-base mb-8 max-w-xs mx-auto">
+                        <h1 className="text-2xl font-bold text-white mb-3 text-center pt-8" style={{ letterSpacing: '-0.03em' }}>{steps[step].title}</h1>
+                        <p className="text-white/80 text-base mb-8 max-w-xs mx-auto text-center">
                             {steps[step].description}
                         </p>
+                        {/* Add visual benefits for 'How Zene Helps' step */}
+                        {steps[step].type === 'why' && (
+                            <div className="flex flex-col items-center gap-3 mb-8 text-center">
+                                <div className="flex items-center gap-4 justify-center">
+                                    <div className="w-7 h-7 flex items-center justify-center">
+                                        <Emoji emoji="💪" png="muscle.png" alt="Work harder" size="md" />
+                                    </div>
+                                    <span className="text-white/90 text-base font-semibold">Work harder</span>
+                                </div>
+                                <div className="flex items-center gap-4 justify-center">
+                                    <div className="w-7 h-7 flex items-center justify-center">
+                                        <Emoji emoji="🧘" png="mindfulness.png" alt="Be more mindful" size="md" />
+                                    </div>
+                                    <span className="text-white/90 text-base font-semibold">Be more mindful</span>
+                                </div>
+                                <div className="flex items-center gap-4 justify-center">
+                                    <div className="w-7 h-7 flex items-center justify-center">
+                                        <Emoji emoji="😌" png="relaxed.png" alt="Feel less stressed" size="md" />
+                                    </div>
+                                    <span className="text-white/90 text-base font-semibold">Feel less stressed</span>
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
                 {/* Goal Selection Step */}
@@ -241,7 +282,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                                 className={`px-4 py-2 rounded-xl border-2 transition-all flex items-center gap-2 text-lg font-semibold ${mainGoal === option.key ? 'bg-emerald-400 text-emerald-900 border-emerald-400' : 'bg-white/10 text-white border-white/20 hover:bg-emerald-500/20'}`}
                                 onClick={() => setMainGoal(option.key)}
                             >
-                                <span>{option.emoji}</span> {option.label}
+                                <Emoji emoji={getGoalEmoji(option.emoji)} png={`${option.emoji}.png`} alt={option.label} size="md" />
+                                {option.label}
                             </button>
                         ))}
                     </div>
@@ -321,8 +363,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             onChange={e => setMeditationGoal(Number(e.target.value))}
                             className="w-full zene-slider mb-2"
                         />
-                        <div className="text-lg font-bold text-emerald-200">{meditationGoal} min</div>
-                        <div className="text-xs text-white/60">Recommended for beginners: 2 min</div>
+                        <div className="text-center mx-auto">
+                            <div className="text-lg font-bold text-emerald-200">{meditationGoal} min</div>
+                            <div className="text-xs text-white/60">Recommended for beginners: 2 min</div>
+                        </div>
                     </div>
                 )}
                 {/* Focus Goal Step */}
@@ -337,76 +381,32 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             onChange={e => setFocusGoal(Number(e.target.value))}
                             className="w-full zene-slider mb-2"
                         />
-                        <div className="text-lg font-bold text-emerald-200">{focusGoal} min</div>
-                        <div className="text-xs text-white/60">Recommended for beginners: 120 min</div>
-                    </div>
-                )}
-                {/* Productivity/Mindfulness Comparison Step */}
-                {steps[step].type === 'comparison' && (
-                    <div className="w-full max-w-xs mx-auto flex flex-col items-center justify-center" style={{ minHeight: '480px' }}>
-                        <h2 className="text-2xl font-extrabold text-white mb-2 text-center" style={{ marginTop: '1.5rem' }}>{steps[step].title}</h2>
-                        {steps[step].description && (
-                            <p className="text-base text-white/80 text-center max-w-xs mx-auto mb-4">
-                                {steps[step].description}
-                            </p>
-                        )}
-                        {/* Day split columns with relative bar heights */}
-                        <div className="flex w-full justify-around gap-6 mb-4">
-                            {/* Without Zene */}
-                            <div className="flex flex-col items-center w-1/2">
-                                <div className="text-base font-bold text-white mb-1">Without</div>
-                                <div className="flex flex-col items-center w-full" style={{ height: '400px', width: '96px' }}>
-                                    <div className="w-full bg-emerald-900/60 rounded-t-xl flex flex-col items-center justify-center mb-1" style={{ flexGrow: 3, minHeight: '100px' }}>
-                                        <span className="text-2xl">📱</span>
-                                        <span className="text-base text-white/80 mt-1">Scrolling</span>
-                                    </div>
-                                    <div className="w-full bg-emerald-800/80 flex flex-col items-center justify-center mb-1" style={{ flexGrow: 1, minHeight: '60px' }}>
-                                        <span className="text-2xl">😐</span>
-                                        <span className="text-base text-white/80 mt-1">Tasks</span>
-                                    </div>
-                                    <div className="w-full bg-emerald-700/80 rounded-b-xl flex flex-col items-center justify-center" style={{ flexGrow: 2, minHeight: '80px' }}>
-                                        <span className="text-2xl">😩</span>
-                                        <span className="text-base text-white/80 mt-1">Stressed</span>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* With Zene */}
-                            <div className="flex flex-col items-center w-1/2">
-                                <div className="text-base font-bold text-white mb-1">With</div>
-                                <div className="flex flex-col items-center w-full" style={{ height: '400px', width: '96px' }}>
-                                    <div className="w-full bg-emerald-400/90 rounded-t-xl flex flex-col items-center justify-center mb-1" style={{ flexGrow: 3, minHeight: '100px' }}>
-                                        <span className="text-2xl">✅</span>
-                                        <span className="text-base text-emerald-900 mt-1">Tasks</span>
-                                    </div>
-                                    <div className="w-full bg-emerald-300/90 flex flex-col items-center justify-center mb-1" style={{ flexGrow: 1, minHeight: '60px' }}>
-                                        <span className="text-2xl">🧘</span>
-                                        <span className="text-base text-emerald-900 mt-1">Mindful</span>
-                                    </div>
-                                    <div className="w-full bg-emerald-200/90 rounded-b-xl flex flex-col items-center justify-center" style={{ flexGrow: 2, minHeight: '80px' }}>
-                                        <span className="text-2xl">😊</span>
-                                        <span className="text-base text-emerald-900 mt-1">Relaxed</span>
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="text-center mx-auto">
+                            <div className="text-lg font-bold text-emerald-200">{focusGoal} min</div>
+                            <div className="text-xs text-white/60">Recommended for beginners: 120 min</div>
                         </div>
-                        {/* Footer text */}
-                        <div className="text-base font-bold text-emerald-100 text-center mt-2">Zene helps you spend more time on what matters</div>
                     </div>
                 )}
                 {/* Summary Step: Free Trial Timeline */}
                 {steps[step].type === 'summary' && (
-                    <div className="w-full max-w-xs mx-auto flex flex-col items-center justify-center" style={{ minHeight: '420px' }}>
+                    <div className="w-full max-w-xs mx-auto flex flex-col items-center justify-center text-center" style={{ minHeight: '420px' }}>
                         {/* Main description */}
                         <div className="text-xl font-bold text-white mb-12 text-center">{steps[step].description}</div>
                         {/* Timeline */}
                         <div className="flex w-full items-start gap-4 mb-2">
                             {/* Timeline icons and line */}
                             <div className="flex flex-col items-center" style={{ minWidth: '32px', height: '320px', justifyContent: 'space-between' }}>
-                                <span className="text-2xl mb-2">🔓</span>
+                                <div className="w-8 h-8 flex items-center justify-center mb-2">
+                                    <Emoji emoji="🔓" png="unlock.png" alt="unlock" size="md" />
+                                </div>
                                 <div className="flex-1 w-1 bg-emerald-300 rounded-full" style={{ minHeight: '80px', marginBottom: '6px' }}></div>
-                                <span className="text-2xl mb-2">🌱</span>
+                                <div className="w-8 h-8 flex items-center justify-center mb-2">
+                                    <Emoji emoji="🌱" png="leaf.png" alt="leaf" size="md" />
+                                </div>
                                 <div className="flex-1 w-1 bg-emerald-300 rounded-full" style={{ minHeight: '80px', marginBottom: '6px' }}></div>
-                                <span className="text-2xl">⭐</span>
+                                <div className="w-8 h-8 flex items-center justify-center">
+                                    <Emoji emoji="⭐️" png="star.png" alt="star" size="md" />
+                                </div>
                             </div>
                             {/* Timeline text */}
                             <div className="flex flex-col gap-12 flex-1 justify-between" style={{ height: '320px' }}>
@@ -427,26 +427,26 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                     </div>
                 )}
             </div>
-            {/* Step indicators */}
-            <div className="flex items-center justify-center gap-2 mb-8">
-                {steps.map((_, i) => (
-                    <span key={i} className={`w-2 h-2 rounded-full ${i === step ? 'bg-white' : 'bg-white/30'} transition-all`}></span>
-                ))}
-            </div>
             <div className="flex w-full max-w-xs gap-3 mb-2 animate-float">
                 {step > 0 && (
                     <button
                         className="flex-1 py-3 rounded-xl bg-emerald-900/60 text-emerald-200 font-bold text-lg shadow-lg active:bg-emerald-800 transition"
                         onClick={handleBack}
+                        disabled={loading}
                     >
                         Back
                     </button>
                 )}
                 <button
-                    className="flex-1 py-3 rounded-xl bg-emerald-400 text-emerald-900 font-bold text-lg shadow-lg active:bg-emerald-300 transition"
+                    className="flex-1 py-3 rounded-xl bg-emerald-400 text-emerald-900 font-bold text-lg shadow-lg active:bg-emerald-300 transition flex items-center justify-center"
                     onClick={handleNextWithReset}
+                    disabled={loading}
                 >
-                    {step < steps.length - 1 ? "Next" : "Let's Go!"}
+                    {loading ? (
+                        <span className="w-5 h-5 border-2 border-emerald-900 border-t-transparent rounded-full animate-spin inline-block"></span>
+                    ) : (
+                        step < steps.length - 1 ? "Next" : "Let's Go!"
+                    )}
                 </button>
             </div>
             {/* Motivational microcopy */}
@@ -458,4 +458,29 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             </div>
         </div>
     );
+}
+
+// Helper functions to get emoji characters:
+function getStepEmoji(imageKey: string): string {
+    const emojiMap: Record<string, string> = {
+        'mindfulness': '🧘',
+        'sparkle': '✨',
+        'leaf': '🌱',
+        'book': '📚',
+        'relax': '🌿',
+        'candle': '🕯️',
+        'goal': '🎯',
+        'rocket': '🚀'
+    };
+    return emojiMap[imageKey] || '✨';
+}
+
+function getGoalEmoji(goalKey: string): string {
+    const emojiMap: Record<string, string> = {
+        'goal': '🎯',
+        'mindfulness': '🧘',
+        'book': '📚',
+        'relax': '🌿'
+    };
+    return emojiMap[goalKey] || '✨';
 } 

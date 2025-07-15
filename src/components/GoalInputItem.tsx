@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { DisplayGoal } from '../types';
+import { Emoji } from './Emoji';
 
 interface GoalInputItemProps {
   goal: DisplayGoal;
@@ -57,7 +58,13 @@ export default function GoalInputItem({
             : 'border-amber-300 hover:border-amber-500'
             } flex items-center justify-center transition-colors duration-200`}
           disabled={isPlaceholder}
-        ></button>
+        >
+          {isPlaceholder ? (
+            <Emoji emoji="💡" png="lightbulb.png" alt="lightbulb" className="w-4 h-4" />
+          ) : (
+            <Emoji emoji="✅" png="check.png" alt="check" className="w-4 h-4" />
+          )}
+        </button>
         <div className="flex-1 flex items-center">
           <input
             type="text"

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Wifi, WifiOff, RefreshCw, CheckCircle } from 'lucide-react';
 import { offlineStorage } from '../lib/offlineStorage';
+import { Emoji } from './Emoji';
 
 interface SyncIndicatorProps {
     userId: string;
@@ -49,7 +50,7 @@ export default function SyncIndicator({ userId }: SyncIndicatorProps) {
             setPendingSync(status.pending);
             setLastSync(status.lastSync);
         } catch (error) {
-            console.error('Error checking sync status:', error);
+            // console.error('Error checking sync status:', error);
         }
     };
 
@@ -59,7 +60,7 @@ export default function SyncIndicator({ userId }: SyncIndicatorProps) {
             await offlineStorage.forceSync();
             await checkSyncStatus();
         } catch (error) {
-            console.error('Error during manual sync:', error);
+            // console.error('Error during manual sync:', error);
         } finally {
             setIsSyncing(false);
         }
@@ -97,10 +98,10 @@ export default function SyncIndicator({ userId }: SyncIndicatorProps) {
                     <button
                         onClick={() => setShowDetails(!showDetails)}
                         className={`p-2 rounded-full transition-colors ${isOnline
-                                ? pendingSync > 0
-                                    ? 'bg-yellow-500/20 text-yellow-400'
-                                    : 'bg-green-500/20 text-green-400'
-                                : 'bg-red-500/20 text-red-400'
+                            ? pendingSync > 0
+                                ? 'bg-yellow-500/20 text-yellow-400'
+                                : 'bg-green-500/20 text-green-400'
+                            : 'bg-red-500/20 text-red-400'
                             }`}
                         title={isOnline ? 'Online' : 'Offline'}
                     >

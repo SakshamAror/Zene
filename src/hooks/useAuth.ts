@@ -38,8 +38,4 @@ export function useAuth() {
     loading,
     signOut,
   };
-
-  useEffect(() => {
-    console.log('useAuth state', { user, loading });
-  }, [user, loading]);
 }

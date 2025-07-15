@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { saveJournalLog } from '../lib/saveData';
+import { Emoji } from './Emoji';
 
 interface JournalEntryProps {
   userId: string;
@@ -22,20 +23,19 @@ export default function JournalEntry({ userId, initialContent, onContentChange }
       const timeoutId = setTimeout(async () => {
         setIsSaving(true);
         try {
-          const today = new Date().toISOString().split('T')[0];
           await saveJournalLog({
             user_id: userId,
             log: content,
-            date: today,
+            timestamp: new Date().toISOString(),
           });
           onContentChange(content);
         } catch (error) {
-          console.error('Error saving journal entry:', error);
+          // console.error('Error saving journal entry:', error);
         } finally {
           setIsSaving(false);
         }
       }, 1000);
-      
+
       return () => clearTimeout(timeoutId);
     }
   }, [content, userId, initialContent, onContentChange]);

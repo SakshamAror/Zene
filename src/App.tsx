@@ -7,20 +7,54 @@ import Goals from './components/Goals.tsx';
 import Journal from './components/Journal.tsx';
 import Learn from './components/Learn.tsx';
 import Analytics from './components/Analytics.tsx';
-import { Home, Clock, Target, BookOpen, PenTool, BarChart3, Settings as SettingsIcon } from 'lucide-react';
+import { Home, Clock, Target, BookOpen, PenTool, BarChart3, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
 import Settings from './components/Settings';
 import Onboarding from './components/Onboarding';
-import SyncIndicator from './components/SyncIndicator';
-import { getUserPrefs, upsertUserPrefs, saveMeditationSession, getMeditationSessions, getWorkSessions } from './lib/saveData';
+import { getUserPrefs, upsertUserPrefs, saveMeditationSession, getMeditationSessions, getWorkSessions, getFriendNotifications } from './lib/saveData';
 import type { MeditationSession, WorkSession } from './types';
+import { supabase } from './lib/supabase';
 
-type View = 'dashboard' | 'timers' | 'goals' | 'journal' | 'learn' | 'analytics' | 'settings';
+export type View = 'dashboard' | 'timers' | 'goals' | 'journal' | 'learn' | 'analytics' | 'settings';
+
+function upsertProfileIfNeeded(user: any) {
+  if (!user || !user.id) return;
+  const fullName = user.user_metadata?.full_name || user.user_metadata?.name || (user.email ? user.email.split('@')[0] : '');
+  supabase
+    .from('profiles')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .then(({ data, error }) => {
+      if (!data || data.length === 0) {
+        supabase.from('profiles').insert({ user_id: user.id, full_name: fullName }).then(() => { });
+      }
+    });
+}
 
 function App() {
   const { user, loading, signOut } = useAuth();
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [darkMode, setDarkMode] = useState(true); // Default to dark mode for Opal style
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
+  const [bookPopupOpen, setBookPopupOpen] = useState(false);
+  const [needsInitialGoals, setNeedsInitialGoals] = useState(false);
+  const [hasFriendNotifications, setHasFriendNotifications] = useState(false);
+  const [timerActive, setTimerActive] = useState(false); // NEW STATE
+  const [voicePopupOpen, setVoicePopupOpen] = useState(false);
+
+  // Expose a refresh function for instant notification updates
+  const refreshFriendNotifications = async () => {
+    if (user?.id) {
+      try {
+        const { hasNotifications } = await getFriendNotifications(user.id);
+        setHasFriendNotifications(hasNotifications);
+      } catch {
+        setHasFriendNotifications(false);
+      }
+    } else {
+      setHasFriendNotifications(false);
+    }
+  };
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -34,19 +68,34 @@ function App() {
   }, []);
 
   useEffect(() => {
-    console.log('user:', user);
     if (user) {
       getUserPrefs(user.id).then(prefs => {
-        console.log('prefs:', prefs);
         setShowOnboarding(!prefs || prefs.onboarded !== true);
       }).catch((e) => {
-        console.error('getUserPrefs error:', e);
         setShowOnboarding(false);
       });
     } else {
       setShowOnboarding(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      upsertProfileIfNeeded(user);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    refreshFriendNotifications();
+    interval = setInterval(refreshFriendNotifications, 30000);
+    return () => { if (interval) clearInterval(interval); };
+  }, [user?.id]);
+
+  // Scroll to top on view change
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [currentView]);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -67,8 +116,8 @@ function App() {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
-      const hasGoal = meditations.some(m => m.date === dateStr && m.length > 0) ||
-        workSessions.some(w => w.date === dateStr && w.length > 0);
+      const hasGoal = meditations.some(m => m.timestamp && m.timestamp.split('T')[0] === dateStr && m.length > 0) ||
+        workSessions.some(w => w.timestamp && w.timestamp.split('T')[0] === dateStr && w.length > 0);
       if (hasGoal) {
         streak++;
       } else if (i > 0) {
@@ -98,15 +147,27 @@ function App() {
           await saveMeditationSession({
             user_id: user.id,
             length: 120,
-            date: new Date().toISOString().split('T')[0],
+            timestamp: new Date().toISOString(),
           });
         }
       }
+      setNeedsInitialGoals(true);
+      setCurrentView('goals');
       setShowOnboarding(false);
     }
   };
 
-  console.log('App render', { loading, showOnboarding, user });
+  const handleSetCurrentView = (view: View) => {
+    if ((currentView === 'dashboard' && view === 'analytics') || (currentView === 'analytics' && view === 'dashboard')) {
+      setTransitioning(true);
+      setTimeout(() => {
+        setCurrentView(view);
+        setTransitioning(false);
+      }, 250);
+    } else {
+      setCurrentView(view);
+    }
+  };
 
   if (loading || showOnboarding === null) {
     return (
@@ -124,7 +185,7 @@ function App() {
   }
 
   if (showOnboarding) {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
+    return <Onboarding userId={user.id} onComplete={handleOnboardingComplete} />;
   }
 
   const navigationItems = [
@@ -137,60 +198,88 @@ function App() {
   ];
 
   const renderCurrentView = () => {
+    if (currentView === 'analytics') {
+      return (
+        <div className={`min-h-screen z-40 bg-gradient-to-b from-emerald-900 to-emerald-700 transition-all duration-300 ease-in-out ${transitioning ? 'opacity-0 translate-y-8 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+          <div className="absolute top-0 left-0 p-4 z-50">
+            <button
+              className="bg-emerald-900/80 rounded-full p-2 shadow-md border border-emerald-700 text-emerald-200 hover:bg-emerald-800/90 transition"
+              onClick={() => handleSetCurrentView('dashboard')}
+              aria-label="Back to Dashboard"
+            >
+              <ArrowLeft size={22} />
+            </button>
+          </div>
+          <Analytics userId={user.id} />
+        </div>
+      );
+    }
+    if (currentView === 'dashboard') {
+      return (
+        <div className={`transition-all duration-300 ease-in-out ${transitioning ? 'opacity-0 -translate-y-8 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+          <Dashboard userId={user.id} user={user} setCurrentView={handleSetCurrentView} />
+        </div>
+      );
+    }
     switch (currentView) {
-      case 'dashboard':
-        return <Dashboard userId={user.id} user={user} setCurrentView={setCurrentView} />;
       case 'timers':
-        return <Timers userId={user.id} />;
+        return <Timers userId={user.id} setCurrentView={handleSetCurrentView} onTimerActiveChange={setTimerActive} />;
       case 'goals':
-        return <Goals userId={user.id} />;
+        return <Goals userId={user.id} needsInitialGoals={needsInitialGoals} onFirstGoal={() => setNeedsInitialGoals(false)} />;
       case 'journal':
-        return <Journal userId={user.id} />;
+        return <Journal userId={user.id} voicePopupOpen={voicePopupOpen} setVoicePopupOpen={setVoicePopupOpen} />;
       case 'learn':
-        return <Learn userId={user.id} />;
+        return <Learn userId={user.id} onBookOpen={() => setBookPopupOpen(true)} onBookClose={() => setBookPopupOpen(false)} />;
       case 'settings':
-        return <Settings user={user} signOut={signOut} />;
+        return <Settings user={user} signOut={signOut} refreshFriendNotifications={refreshFriendNotifications} />;
       default:
-        return <Dashboard userId={user.id} user={user} setCurrentView={setCurrentView} />;
+        return <Dashboard userId={user.id} user={user} setCurrentView={handleSetCurrentView} />;
     }
   };
 
   return (
     <div className="min-h-screen opal-bg">
       {/* Main Content */}
-      <main className="flex-1 pb-28">
+      <main className="flex-1 pb-24">
         {renderCurrentView()}
       </main>
 
-      {/* Sync Indicator (mobile only) */}
-      <SyncIndicator userId={user.id} />
-
       {/* Floating Bottom Navigation */}
-      <nav className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
-        <div className="bg-emerald-900/90 backdrop-blur-sm border border-emerald-700 rounded-3xl shadow-2xl px-2 py-2">
-          <div className="flex items-center space-x-1">
+      {currentView !== 'analytics' && !bookPopupOpen && !voicePopupOpen && (
+        <nav className={`fixed bottom-0 left-0 w-full z-50 bottom-navbar transition-transform duration-500 ${timerActive ? 'translate-y-full' : 'translate-y-0'}`}>
+          <div className={`bg-emerald-900/90 backdrop-blur-sm px-2 py-2 ${timerActive ? '' : 'border-t border-emerald-700 shadow-2xl'}`}>
+            <div className="max-w-md mx-auto w-full flex items-center justify-between space-x-1">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentView === item.id;
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setCurrentView(item.id as View)}
-                    className={`flex flex-col items-center px-3 py-2 rounded-2xl transition-all duration-200 ${
-                      isActive 
-                        ? 'bg-emerald-400 text-emerald-900' 
-                        : 'text-emerald-200 hover:bg-emerald-800/60'
-                    }`}
+                    onClick={() => handleSetCurrentView(item.id as View)}
+                    className={`flex-1 min-w-0 flex flex-col items-center px-3 py-2 rounded-2xl transition-all duration-200 ${isActive
+                      ? 'bg-emerald-400 text-emerald-900'
+                      : 'text-emerald-200 hover:bg-emerald-800/60'
+                      }`}
                     title={item.label}
+                    style={{ position: 'relative' }}
+                    disabled={timerActive} // Disable nav buttons when timer is active
                   >
-                    <Icon size={20} />
-                    <span className="text-xs mt-1 font-medium">{item.label}</span>
+                    <span style={{ position: 'relative', display: 'inline-block' }}>
+                      <Icon size={20} />
+                      {item.id === 'settings' && hasFriendNotifications && (
+                        <span style={{ position: 'absolute', top: -4, right: -4, width: 10, height: 10, background: '#ef4444', borderRadius: '50%', zIndex: 10 }} />
+                      )}
+                    </span>
+                    {isActive && (
+                      <span className="text-xs mt-1 font-medium">{item.label}</span>
+                    )}
                   </button>
                 );
               })}
             </div>
           </div>
-      </nav>
+        </nav>
+      )}
     </div>
   );
 }
