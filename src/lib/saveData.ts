@@ -4,7 +4,18 @@ import { MeditationSession, WorkSession, JournalLog, Goal, VoiceMessage } from '
 
 // Save a meditation session
 export async function saveMeditationSession(session: Omit<MeditationSession, 'id'>) {
-  return await offlineStorage.saveMeditationSession(session);
+  // Always try to save to Supabase first
+  try {
+    const { data, error } = await supabase
+      .from('meditation_sessions')
+      .insert([{ ...session, timestamp: new Date().toISOString() }])
+      .select();
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    // Fallback to offline storage if Supabase fails
+    return await offlineStorage.saveMeditationSession(session);
+  }
 }
 
 // Save a work session

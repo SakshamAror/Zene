@@ -74,7 +74,9 @@ export interface BookSummary {
 export interface VoiceMessage {
   id?: number | string;
   user_id: string;
-  audio_url: string; // URL to the audio file
+  audio_path: string; // Path/key in the storage bucket
+  /** @deprecated Use audio_path instead */
+  audio_url?: string; // Deprecated: URL to the audio file
   reminder_date: string; // ISO 8601 string for when to show the reminder
   created_at: string; // ISO 8601 string when the message was created
   title?: string; // Optional title for the message

@@ -164,7 +164,7 @@ class OfflineStorage {
         const isOnline = await this.isOnline();
         if (!isOnline) return;
 
-        console.log(`Syncing ${pending.length} pending operations...`);
+        // Only keep error logs and user-facing alerts.
 
         const successfulSyncs: string[] = [];
         let goalsSyncNeeded = false;
@@ -1122,8 +1122,76 @@ class OfflineStorage {
     }
 
     // Force sync
-    async forceSync(): Promise<void> {
+    async forceSync(user_id?: string): Promise<void> {
         await this.syncWithServer();
+
+        if (!user_id) {
+            console.warn('forceSync: user_id not provided, skipping reload of user data from Supabase.');
+            return;
+        }
+
+        // After syncing, always reload from Supabase and overwrite local cache for all user data types
+        try {
+            // Meditation Sessions
+            const { data: medData, error: medError } = await supabase
+                .from('meditation_sessions')
+                .select('*')
+                .eq('user_id', user_id);
+            if (!medError && medData) {
+                await this.set(STORAGE_KEYS.MEDITATION_SESSIONS, medData);
+            }
+            // Work Sessions
+            const { data: workData, error: workError } = await supabase
+                .from('work_sessions')
+                .select('*')
+                .eq('user_id', user_id);
+            if (!workError && workData) {
+                await this.set(STORAGE_KEYS.WORK_SESSIONS, workData);
+            }
+            // Journal Logs
+            const { data: journalData, error: journalError } = await supabase
+                .from('journal_logs')
+                .select('*')
+                .eq('user_id', user_id);
+            if (!journalError && journalData) {
+                await this.set(STORAGE_KEYS.JOURNAL_LOGS, journalData);
+            }
+            // Goals
+            const { data: goalsData, error: goalsError } = await supabase
+                .from('goals')
+                .select('*')
+                .eq('user_id', user_id);
+            if (!goalsError && goalsData) {
+                await this.set(STORAGE_KEYS.GOALS, goalsData);
+            }
+            // User Book Status
+            const { data: bookStatusData, error: bookStatusError } = await supabase
+                .from('user_book_status')
+                .select('*')
+                .eq('user_id', user_id);
+            if (!bookStatusError && bookStatusData) {
+                await this.set(STORAGE_KEYS.USER_BOOK_STATUS, bookStatusData);
+            }
+            // Voice Messages
+            const { data: voiceData, error: voiceError } = await supabase
+                .from('voice_messages')
+                .select('*')
+                .eq('user_id', user_id);
+            if (!voiceError && voiceData) {
+                await this.set(STORAGE_KEYS.VOICE_MESSAGES, voiceData);
+            }
+            // User Prefs (single row)
+            const { data: prefsData, error: prefsError } = await supabase
+                .from('user_prefs')
+                .select('*')
+                .eq('user_id', user_id)
+                .single();
+            if (!prefsError && prefsData) {
+                await this.set(STORAGE_KEYS.USER_PREFS, prefsData);
+            }
+        } catch (err) {
+            console.error('Error reloading user data after sync:', err);
+        }
     }
 
     // Clear all local storage (for debugging/testing)
@@ -1170,7 +1238,10 @@ class OfflineStorage {
                     .from('voice_messages')
                     .insert([message])
                     .select('*');
-                if (error) throw error;
+                if (error) {
+                    console.error('Supabase insert error (voice_messages):', error);
+                    throw error;
+                }
                 return data || [];
             } catch (error) {
                 console.error('Error saving voice message:', error);

@@ -407,8 +407,8 @@ export default function Timers({ userId, setCurrentView, onTimerActiveChange }: 
     const [meditationTimeLeft, setMeditationTimeLeft] = useState(meditationDuration);
     const [isMeditationActive, setIsMeditationActive] = useState(false);
     const [isMeditationCompleted, setIsMeditationCompleted] = useState(false);
-    const [selectedAudio, setSelectedAudio] = useState('none');
-    const [volume, setVolume] = useState(0.5);
+    const [selectedAudio, setSelectedAudio] = useState('ocean'); // Default to ocean
+    const [volume, setVolume] = useState(0.5); // Default to 50%
     const meditationAudioRef = useRef<HTMLAudioElement | null>(null);
     const guidedAudioRef = useRef<HTMLAudioElement | null>(null);
     const [guidedPlaying, setGuidedPlaying] = useState(false);
@@ -445,7 +445,6 @@ export default function Timers({ userId, setCurrentView, onTimerActiveChange }: 
                 }
             } catch (error) {
                 // Keep default meditation mode if there's an error
-                console.error('Error fetching user preferences:', error);
             } finally {
                 setModeLoading(false); // Done loading
             }
@@ -476,13 +475,17 @@ export default function Timers({ userId, setCurrentView, onTimerActiveChange }: 
         if (isMeditationActive && meditationTimeLeft > 0) {
             meditationIntervalRef.current = setInterval(() => {
                 setMeditationTimeLeft(time => {
-                    if (time <= 1) {
+                    if (time === 1 && !meditationCompletedRef.current) {
+                        // Synchronously set guard and state, then fade/save
+                        meditationCompletedRef.current = true;
+                        clearInterval(meditationIntervalRef.current!);
+                        setMeditationTimeLeft(0);
                         setIsMeditationActive(false);
                         setIsMeditationCompleted(true);
-                        if (!meditationCompletedRef.current) { // ADD GUARD
-                            meditationCompletedRef.current = true;
-                            handleMeditationComplete();
-                        }
+                        (async () => {
+                            await fadeOutAndStopAudios();
+                            await handleMeditationComplete();
+                        })();
                         return 0;
                     }
                     return time - 1;
@@ -620,38 +623,10 @@ export default function Timers({ userId, setCurrentView, onTimerActiveChange }: 
         ]);
     };
 
-    // Focus Stopwatch Effects
-    useEffect(() => {
-        if (isFocusActive) {
-            focusIntervalRef.current = setInterval(() => {
-                setFocusTime(time => time + 1);
-            }, 1000);
-        } else {
-            if (focusIntervalRef.current) {
-                clearInterval(focusIntervalRef.current);
-            }
-        }
-
-        return () => {
-            if (focusIntervalRef.current) {
-                clearInterval(focusIntervalRef.current);
-            }
-        };
-    }, [isFocusActive]);
-
-    useEffect(() => {
-        if (focusSelectedAudio !== 'none' && isFocusActive) {
-            if (focusAudioRef.current) {
-                focusAudioRef.current.volume = focusVolume;
-                focusAudioRef.current.play();
-            }
-        } else if (focusAudioRef.current) {
-            focusAudioRef.current.pause();
-        }
-    }, [focusSelectedAudio, isFocusActive, focusVolume]);
-
     const handleMeditationComplete = async () => {
-        if (meditationCompletedRef.current) return; // GUARD
+        if (meditationCompletedRef.current) {
+            return; // GUARD
+        }
         meditationCompletedRef.current = true;
         try {
             await saveMeditationSession({
@@ -660,7 +635,7 @@ export default function Timers({ userId, setCurrentView, onTimerActiveChange }: 
                 timestamp: new Date().toISOString(),
             });
         } catch (error) {
-            // console.error('Error saving meditation session:', error);
+            // Optionally handle error
         }
     };
 

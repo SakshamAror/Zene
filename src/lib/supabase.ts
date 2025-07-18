@@ -26,12 +26,8 @@ export async function uploadVoiceMessage(userId: string, blob: Blob): Promise<st
       return null;
     }
 
-    // Get the public URL
-    const { data: publicUrlData } = supabase.storage
-      .from('voice-messages')
-      .getPublicUrl(fileName);
-
-    return publicUrlData?.publicUrl || null;
+    // Return the file path (key) for later use with signed URLs
+    return fileName;
   } catch (error) {
     console.error('Error uploading voice message:', error);
     return null;
