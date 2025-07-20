@@ -141,59 +141,51 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
   ) => {
     const today = new Date();
     let streak = 0;
-    let missedDaysInWeek = 0;
-    let consecutiveDays = 0;
-    let lastMissedDay = null;
+    let consecutiveMissedDays = 0;
+    let consecutiveGoalDays = 0;
+
     // Go back up to 30 days
     for (let i = 0; i < 30; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
+
       const meditationSeconds = meditations
         .filter(m => m.timestamp && m.timestamp.split('T')[0] === dateStr)
         .reduce((sum, m) => sum + m.length, 0);
       const workSeconds = workSessions
         .filter(w => w.timestamp && w.timestamp.split('T')[0] === dateStr)
         .reduce((sum, w) => sum + w.length, 0);
+
       const reachedMeditationGoal = meditationSeconds >= (meditationGoal * 60);
       const reachedFocusGoal = workSeconds >= (focusGoal * 60);
       const hasGoal = reachedMeditationGoal || reachedFocusGoal;
+
       if (hasGoal) {
         streak++;
-        consecutiveDays++;
+        consecutiveMissedDays = 0; // Reset consecutive missed days
+        consecutiveGoalDays++;
+
+        // If user has 2 or more consecutive goal days, reset the missed day counter
+        // This allows streak to continue even after some missed days
+        if (consecutiveGoalDays >= 2) {
+          consecutiveMissedDays = 0;
+        }
       } else {
-        missedDaysInWeek++;
-        // If more than 2 missed days in the last 7 days, reset streak
-        if (missedDaysInWeek > 2 && i < 7) {
+        consecutiveMissedDays++;
+        consecutiveGoalDays = 0; // Reset consecutive goal days
+
+        // Break streak if we have 3 or more consecutive missed days (meaning 2 full days have passed)
+        // This allows the current day to be the 2nd consecutive missed day without breaking
+        if (consecutiveMissedDays >= 3) {
           break;
         }
-        // If more than 2 missed days in any rolling 7-day window, reset streak
-        if (i >= 6) {
-          // Count missed days in the last 7 days
-          let missedInWindow = 0;
-          for (let j = i - 6; j <= i; j++) {
-            const windowDate = new Date(today);
-            windowDate.setDate(windowDate.getDate() - j);
-            const windowDateStr = windowDate.toISOString().split('T')[0];
-            const meditationSecondsW = meditations
-              .filter(m => m.timestamp && m.timestamp.split('T')[0] === windowDateStr)
-              .reduce((sum, m) => sum + m.length, 0);
-            const workSecondsW = workSessions
-              .filter(w => w.timestamp && w.timestamp.split('T')[0] === windowDateStr)
-              .reduce((sum, w) => sum + w.length, 0);
-            const reachedMeditationGoalW = meditationSecondsW >= (meditationGoal * 60);
-            const reachedFocusGoalW = workSecondsW >= (focusGoal * 60);
-            if (!(reachedMeditationGoalW || reachedFocusGoalW)) {
-              missedInWindow++;
-            }
-          }
-          if (missedInWindow > 2) {
-            break;
-          }
-        }
-        // Don't increment streak for missed days, but don't break unless above
+
+        // For the first 2 missed days, continue counting but don't increment streak
+        // This allows for 2 grace days (including the current day)
       }
     }
+
     return streak;
   };
 
@@ -432,7 +424,7 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
                     zIndex: 0,
                     fontSize: '3rem',
                     fontWeight: 900,
-                    color: 'rgba(255, 115, 0, 0.4)',
+                    color: 'rgba(255, 115, 0, 0.5)',
                     letterSpacing: '-0.04em',
                     textTransform: 'uppercase',
                     whiteSpace: 'nowrap',

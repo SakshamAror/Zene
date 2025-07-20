@@ -19,9 +19,44 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
   const [deletingId, setDeletingId] = useState<number | string | null>(null);
   const [togglingId, setTogglingId] = useState<number | string | null>(null);
   const [showFirstGoalModal, setShowFirstGoalModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadGoals();
+  }, [userId]);
+
+  // Add page visibility listener to sync when user returns to app
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && userId && offlineStorage && typeof offlineStorage.forceSync === 'function') {
+        // Sync when user returns to the app
+        offlineStorage.forceSync(userId).catch(error => {
+          console.error('Error during visibility change sync:', error);
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [userId]);
+
+  // Add beforeunload listener to sync before user leaves page
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (userId && offlineStorage && typeof offlineStorage.forceSync === 'function') {
+        // Force sync before user leaves (this is synchronous to prevent navigation)
+        offlineStorage.syncWithServer().catch(error => {
+          console.error('Error during beforeunload sync:', error);
+        });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [userId]);
 
   useEffect(() => {
@@ -34,11 +69,12 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
 
   const loadGoals = async () => {
     try {
-      // Try to get from Supabase
+      setLoading(true);
+      setError(null);
       let userGoals = await getGoals(userId);
+
       // If any temp IDs are present, prefer local storage
       if (userGoals.some(g => typeof g.id === 'string' && g.id.startsWith('temp_'))) {
-        // Use offlineStorage.getGoals with localOnly param
         if (typeof offlineStorage.getGoals === 'function') {
           const localGoals = await offlineStorage.getGoals(userId, { localOnly: true });
           userGoals = localGoals;
@@ -46,7 +82,8 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
       }
       setGoals(userGoals);
     } catch (error) {
-      setLoading(false);
+      console.error('Error loading goals:', error);
+      setError('Failed to load goals. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -57,6 +94,7 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
     if (!newGoal.trim() || saving) return;
 
     setSaving(true);
+    setError(null);
     try {
       const goalData = {
         user_id: userId,
@@ -65,55 +103,101 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
         timestamp: new Date().toISOString(),
       };
 
-      await saveGoal(goalData);
-      setNewGoal('');
-      if (needsInitialGoals && onFirstGoal) {
-        onFirstGoal();
-      }
-      // After adding, always reload from local storage if any temp IDs are present
-      let userGoals = await getGoals(userId);
-      if (userGoals.some(g => typeof g.id === 'string' && g.id.startsWith('temp_'))) {
-        if (typeof offlineStorage.getGoals === 'function') {
-          const localGoals = await offlineStorage.getGoals(userId, { localOnly: true });
-          userGoals = localGoals;
+      const savedGoals = await saveGoal(goalData);
+
+      // Update state with the new goal(s)
+      if (savedGoals && savedGoals.length > 0) {
+        const newGoalItem = savedGoals[0];
+        setGoals(prev => [newGoalItem, ...prev]);
+        setNewGoal('');
+
+        if (needsInitialGoals && onFirstGoal) {
+          onFirstGoal();
         }
       }
-      setGoals(userGoals);
+
+      // Force immediate sync for critical operations
+      if (offlineStorage && typeof offlineStorage.forceSync === 'function' && userId) {
+        // Use setTimeout to ensure the save operation completes first
+        setTimeout(() => {
+          offlineStorage.forceSync(userId).catch(error => {
+            console.error('Error during force sync:', error);
+          });
+        }, 100);
+      }
     } catch (error) {
-      setSaving(false);
+      console.error('Error adding goal:', error);
+      setError('Failed to add goal. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleToggleGoal = async (goalId: number | string, completed: boolean) => {
+  const handleToggleGoal = async (goalId: number | string, currentCompleted: boolean) => {
+    if (!goalId) return;
+
+    // Prevent multiple clicks
+    if (togglingId === goalId) return;
+
     setTogglingId(goalId);
+    setError(null);
+
     try {
-      await updateGoal(goalId, { completed: !completed });
-      let userGoals: Goal[] = [];
-      // Always reload from local storage if toggled goal is a temp ID
-      if (typeof goalId === 'string' && goalId.startsWith('temp_')) {
-        if (typeof offlineStorage.getGoals === 'function') {
-          userGoals = await offlineStorage.getGoals(userId, { localOnly: true });
-        }
-      } else {
-        userGoals = await getGoals(userId);
+      await updateGoal(goalId, { completed: !currentCompleted });
+
+      // Update state optimistically
+      setGoals(prev => prev.map(goal =>
+        goal.id === goalId ? { ...goal, completed: !currentCompleted } : goal
+      ));
+
+      // Force immediate sync for critical operations
+      if (offlineStorage && typeof offlineStorage.forceSync === 'function' && userId) {
+        // Use setTimeout to ensure the update operation completes first
+        setTimeout(() => {
+          offlineStorage.forceSync(userId).catch(error => {
+            console.error('Error during force sync:', error);
+          });
+        }, 100);
       }
-      setGoals(userGoals);
     } catch (error) {
-      setTogglingId(null);
+      console.error('Error toggling goal:', error);
+      setError('Failed to update goal. Please try again.');
+      // Revert optimistic update on error
+      await loadGoals();
     } finally {
       setTogglingId(null);
     }
   };
 
   const handleDeleteGoal = async (goalId: number | string) => {
+    if (!goalId) return;
+
+    // Prevent multiple clicks
+    if (deletingId === goalId) return;
+
     setDeletingId(goalId);
+    setError(null);
+
     try {
       await deleteGoal(goalId);
+
+      // Update state optimistically
       setGoals(prev => prev.filter(goal => goal.id !== goalId));
+
+      // Force immediate sync for critical operations
+      if (offlineStorage && typeof offlineStorage.forceSync === 'function' && userId) {
+        // Use setTimeout to ensure the delete operation completes first
+        setTimeout(() => {
+          offlineStorage.forceSync(userId).catch(error => {
+            console.error('Error during force sync:', error);
+          });
+        }, 100);
+      }
     } catch (error) {
       console.error('Error deleting goal:', error);
+      setError('Failed to delete goal. Please try again.');
+      // Revert optimistic update on error
+      await loadGoals();
     } finally {
       setDeletingId(null);
     }
@@ -171,6 +255,19 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
           <h1 className="text-3xl font-bold text-white mb-2">Goals</h1>
           <p className="text-white/80 text-lg max-w-md">Set, track, and achieve your goals</p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-2xl">
+            <p className="text-red-400 text-center">{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="mt-2 text-red-300 text-sm hover:text-red-200"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -252,7 +349,7 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
                         className="flex items-center space-x-3 p-4 bg-emerald-900/60 rounded-2xl border border-emerald-700"
                       >
                         <button
-                          onClick={() => { if (id) handleToggleGoal(id, goal.completed); }}
+                          onClick={() => id && handleToggleGoal(id, goal.completed)}
                           className="w-6 h-6 border-2 border-emerald-400 rounded-full hover:bg-emerald-400/20 transition-colors flex items-center justify-center flex-shrink-0"
                           disabled={togglingId === id || deletingId === id}
                         >
@@ -265,10 +362,15 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
                         <span className="flex-1 text-white break-words">{goal.goal}</span>
                         {id && (
                           <button
-                            onClick={() => handleDeleteGoal(id)}
-                            className="p-1 rounded-full hover:bg-white/10 transition-colors text-white/50 disabled:opacity-40"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDeleteGoal(id);
+                            }}
+                            className="p-2 rounded-full hover:bg-red-500/20 transition-colors text-red-400 hover:text-red-300 disabled:opacity-40 disabled:cursor-not-allowed"
                             disabled={deletingId === id || togglingId === id}
                             aria-label="Delete goal"
+                            title="Delete goal"
                           >
                             {deletingId === id ? (
                               <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
@@ -299,7 +401,7 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
                         className="flex items-center space-x-3 p-4 bg-emerald-400/20 rounded-2xl border border-emerald-400/30"
                       >
                         <button
-                          onClick={() => { if (id) handleToggleGoal(id, goal.completed); }}
+                          onClick={() => id && handleToggleGoal(id, goal.completed)}
                           className="w-6 h-6 bg-emerald-400 rounded-full flex items-center justify-center flex-shrink-0"
                           disabled={togglingId === id || deletingId === id}
                         >
@@ -314,10 +416,15 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
                         </span>
                         {id && (
                           <button
-                            onClick={() => handleDeleteGoal(id)}
-                            className="p-1 rounded-full hover:bg-red-500/10 transition-colors text-red-400 disabled:opacity-50"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDeleteGoal(id);
+                            }}
+                            className="p-2 rounded-full hover:bg-red-500/20 transition-colors text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={deletingId === id || togglingId === id}
                             aria-label="Delete goal"
+                            title="Delete goal"
                           >
                             {deletingId === id ? (
                               <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>

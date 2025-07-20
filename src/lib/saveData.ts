@@ -153,3 +153,7 @@ export async function markVoiceMessageAsPlayed(id: string | number) {
 export async function deleteVoiceMessage(id: string | number) {
   return await offlineStorage.deleteVoiceMessage(id);
 }
+
+export async function cleanupExpiredVoiceMessages() {
+  return await offlineStorage.cleanupExpiredVoiceMessages();
+}

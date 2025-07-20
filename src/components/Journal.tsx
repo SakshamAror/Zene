@@ -3,7 +3,7 @@ import { Calendar, PenTool, ChevronLeft, ChevronRight, Save, Calendar as Calenda
 import { getJournalLogs, saveJournalLog, deleteJournalLog } from '../lib/saveData';
 import type { JournalLog } from '../types';
 import { Emoji } from './Emoji';
-import { getVoiceMessages, saveVoiceMessage, getVoiceMessagesForDate, markVoiceMessageAsPlayed, deleteVoiceMessage } from '../lib/saveData';
+import { getVoiceMessages, saveVoiceMessage, getVoiceMessagesForDate, markVoiceMessageAsPlayed, deleteVoiceMessage, cleanupExpiredVoiceMessages } from '../lib/saveData';
 import { uploadVoiceMessage, supabase } from '../lib/supabase';
 import type { VoiceMessage } from '../types';
 import { offlineStorage } from '../lib/offlineStorage';
@@ -272,66 +272,14 @@ function VoiceMessagePopup({ show, onClose, children }: { show: boolean, onClose
 }
 
 export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: JournalProps) {
-  // All hooks at the top level (useState, useEffect, useRef, etc.)
+  // Move all useState hooks above helper functions so they are available
   const [selectedDate, setSelectedDate] = useState(toLocalDateString(new Date()));
   const [content, setContent] = useState('');
   const [journalLogs, setJournalLogs] = useState<JournalLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // --- Voice Message State ---
-  const [recording, setRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
-  const [audioURL, setAudioURL] = useState<string | null>(null);
-  const [reminderDate, setReminderDate] = useState<string>(getTomorrowISO());
-  const [voiceTitle, setVoiceTitle] = useState('');
-  const [savingVoice, setSavingVoice] = useState(false);
-  const [voiceMessagesToday, setVoiceMessagesToday] = useState<VoiceMessage[]>([]);
-  const [showRecorder, setShowRecorder] = useState(false);
-  const [showVoiceModal, setShowVoiceModal] = useState(false);
-
-  // Add state for the voice recording calendar popup
-  const [showVoiceCalendar, setShowVoiceCalendar] = useState(false);
-
-  // Add state for voice message playback feedback
-  const [playingMessageId, setPlayingMessageId] = useState<string | number | null>(null);
-  const [loadingMessageId, setLoadingMessageId] = useState<string | number | null>(null);
-  const [showRemindersSection, setShowRemindersSection] = useState(true);
-
-  useEffect(() => {
-    loadJournalLogs();
-  }, [userId]);
-
-  useEffect(() => {
-    const log = journalLogs.find(log => log.timestamp && log.timestamp.split('T')[0] === selectedDate);
-    setContent(log?.log || '');
-  }, [selectedDate, journalLogs]);
-
-  // Load today's voice messages
-  useEffect(() => {
-    if (!userId) return;
-    const today = toLocalDateString(new Date());
-    getVoiceMessagesForDate(userId, today).then(messages => {
-      setVoiceMessagesToday(messages);
-    });
-  }, [userId, savingVoice]);
-
-  useEffect(() => {
-    // Always try to sync offline storage with Supabase on mount if online
-    if (offlineStorage && typeof offlineStorage.forceSync === 'function' && userId) {
-      offlineStorage.forceSync(userId);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    // If there is any unplayed message, open the reminders section by default
-    if (voiceMessagesToday.some(msg => !msg.played)) {
-      setShowRemindersSection(true);
-    }
-    // Optionally, you could auto-close if all are played, but user may want to keep it open
-  }, [voiceMessagesToday]);
-
+  // Helper functions used in hooks must be defined before the hooks
   const loadJournalLogs = async () => {
     try {
       const logs = await getJournalLogs(userId);
@@ -377,6 +325,26 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
     }
   };
 
+  // --- Voice Message State ---
+  const [recording, setRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+  const [audioURL, setAudioURL] = useState<string | null>(null);
+  const [reminderDate, setReminderDate] = useState<string>(getTomorrowISO());
+  const [voiceTitle, setVoiceTitle] = useState('');
+  const [savingVoice, setSavingVoice] = useState(false);
+  const [voiceMessagesToday, setVoiceMessagesToday] = useState<VoiceMessage[]>([]);
+  const [showRecorder, setShowRecorder] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [showVoiceCalendar, setShowVoiceCalendar] = useState(false);
+  const [playingMessageId, setPlayingMessageId] = useState<string | number | null>(null);
+  const [loadingMessageId, setLoadingMessageId] = useState<string | number | null>(null);
+  const [showRemindersSection, setShowRemindersSection] = useState(true);
+  const [relayAudioPath, setRelayAudioPath] = useState<string | null>(null);
+
+  // Track if cleanup has been run to prevent multiple executions
+  const cleanupRunRef = useRef(false);
+
   // --- Voice Recording Logic ---
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -388,7 +356,79 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Timer logic
+  // Calendar and date navigation hooks
+  const selected = new Date(selectedDate);
+  const [calendarMonth, setCalendarMonth] = useState(selected.getMonth());
+  const [calendarYear, setCalendarYear] = useState(selected.getFullYear());
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  // Move fetchVoiceMessagesToday above hooks that use it
+  const fetchVoiceMessagesToday = async () => {
+    if (!userId) return;
+    try {
+      const { data, error } = await supabase
+        .from('voice_messages')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const today = toLocalDateString(new Date());
+      const todayMessages = (data || []).filter(msg => msg.reminder_date && msg.reminder_date.split('T')[0] === today);
+      setVoiceMessagesToday(todayMessages);
+    } catch (err) {
+      console.error('Error fetching voice messages from Supabase:', err);
+    }
+  };
+
+  // All useEffect hooks
+  useEffect(() => {
+    loadJournalLogs();
+  }, [userId]);
+
+  useEffect(() => {
+    const log = journalLogs.find(log => log.timestamp && log.timestamp.split('T')[0] === selectedDate);
+    setContent(log?.log || '');
+  }, [selectedDate, journalLogs]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const today = toLocalDateString(new Date());
+    getVoiceMessagesForDate(userId, today).then(messages => {
+      setVoiceMessagesToday(messages);
+    });
+  }, [userId, savingVoice]);
+
+  useEffect(() => {
+    if (offlineStorage && typeof offlineStorage.forceSync === 'function' && userId) {
+      offlineStorage.forceSync(userId);
+    }
+  }, [userId]);
+
+  // Clean up expired voice messages only once when component mounts
+  useEffect(() => {
+    if (userId && !cleanupRunRef.current) {
+      cleanupRunRef.current = true;
+      cleanupExpiredVoiceMessages().catch(error => {
+        console.error('Error cleaning up expired voice messages:', error);
+      });
+    }
+  }, [userId]);
+
+  // Ensure reminderDate is always valid
+  useEffect(() => {
+    if (reminderDate && isNaN(new Date(reminderDate).getTime())) {
+      console.warn('Invalid reminderDate detected, resetting to tomorrow');
+      setReminderDate(getTomorrowISO());
+    }
+  }, [reminderDate]);
+
+  useEffect(() => {
+    // If any message is played, collapse reminders section by default
+    if (voiceMessagesToday.some(msg => msg.played)) {
+      setShowRemindersSection(false);
+    }
+  }, [voiceMessagesToday]);
+
   useEffect(() => {
     if (recording && !isPaused) {
       timerRef.current = setInterval(() => {
@@ -402,7 +442,6 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
     };
   }, [recording, isPaused]);
 
-  // Waveform drawing
   useEffect(() => {
     if (!analyser || !canvasRef.current || !recording) return;
     const canvas = canvasRef.current;
@@ -435,6 +474,29 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
       if (animationId) cancelAnimationFrame(animationId);
     };
   }, [analyser, recording]);
+
+  useEffect(() => {
+    const d = new Date(selectedDate);
+    setCalendarMonth(d.getMonth());
+    setCalendarYear(d.getFullYear());
+  }, [selectedDate]);
+
+  // On mount and when userId changes, always fetch from Supabase
+  useEffect(() => {
+    fetchVoiceMessagesToday();
+  }, [userId]);
+
+  // Move the loading check here, after all hooks
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 loading-spinner mx-auto mb-4"></div>
+          <p className="text-white/80 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Start Recording (with waveform)
   const startRecording = async () => {
@@ -510,19 +572,29 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
 
   // Define handleSaveVoice as a plain async function
   const handleSaveVoice = async () => {
-    if (!audioChunks.length || !reminderDate) return;
+    if ((!audioChunks.length && !audioURL) || !reminderDate) return;
     setSavingVoice(true);
     try {
-      // Create blob from audio chunks
-      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      let audioPath: string | null = null;
 
-      // Upload to Supabase Storage
-      const audioPath = await uploadVoiceMessage(userId, blob);
+      if (relayAudioPath) {
+        // Reuse the existing audio path from relay
+        audioPath = relayAudioPath;
+      } else if (audioChunks.length > 0) {
+        // Create blob from audio chunks (new recording)
+        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+        audioPath = await uploadVoiceMessage(userId, blob);
+      } else if (audioURL) {
+        // Reusing existing audio file - copy it to a new path
+        const response = await fetch(audioURL);
+        const blob = await response.blob();
+        audioPath = await uploadVoiceMessage(userId, blob);
+      }
 
       if (!audioPath) {
         // Fallback: save locally if Supabase upload fails
         console.log('Supabase upload failed, saving locally for testing');
-        const localAudioUrl = URL.createObjectURL(blob);
+        const localAudioUrl = audioURL || URL.createObjectURL(new Blob(audioChunks, { type: 'audio/webm' }));
 
         // Save voice message with the local URL (deprecated field)
         await saveVoiceMessage({
@@ -555,6 +627,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
       setVoiceTitle('');
       setShowRecorder(false);
       setVoicePopupOpen(false);
+      setRelayAudioPath(null);
       // Always reload from Supabase after saving
       await fetchVoiceMessagesToday();
     } catch (error) {
@@ -567,6 +640,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
 
   // Play a voice message
   const handlePlayVoice = async (audio_path: string, id: string | number) => {
+    console.log('handlePlayVoice called with id:', id);
     console.log('Playing voice message:', { audio_path, id, userId });
 
     // Validate inputs
@@ -646,11 +720,11 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
       audio.addEventListener('ended', async () => {
         setPlayingMessageId(null);
         // Mark as played in Supabase and refresh UI
-        if (!id || id === 'undefined' || typeof id !== 'string' || !/^([0-9a-fA-F-]{36})$/.test(id)) {
+        console.log('Marking voice message as played. ID:', id);
+        if (id === undefined || id === null) {
           console.error('Invalid voice message ID for markVoiceMessageAsPlayed:', id);
           alert('Error: Invalid voice message ID. Cannot mark as played.');
         } else {
-          console.log('Marking voice message as played. ID:', id);
           try {
             await markVoiceMessageAsPlayed(id);
           } catch (err) {
@@ -699,6 +773,61 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
     }
   };
 
+  // Relay a voice message to a different date
+  const handleRelayVoice = async (msg: VoiceMessage) => {
+    try {
+      // Set the title from the original message
+      setVoiceTitle(msg.title || 'Voice Message');
+
+      // Set tomorrow as default reminder date
+      setReminderDate(getTomorrowISO());
+
+      // Store the original audio path for reuse
+      if (msg.audio_path) {
+        // For Supabase storage files, we need to create a signed URL for preview
+        try {
+          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+            .from('voice-messages')
+            .createSignedUrl(msg.audio_path, 3600); // 1 hour expiry
+
+          if (signedUrlError) {
+            console.error('Signed URL error:', signedUrlError);
+            alert('Failed to generate access URL for audio file.');
+            return;
+          }
+
+          setAudioChunks([]); // Clear any existing chunks
+          setAudioURL(signedUrlData?.signedUrl || null);
+          setRelayAudioPath(msg.audio_path);
+          setShowRecorder(false); // Skip the recorder since we have existing audio
+        } catch (error) {
+          console.error('Error generating signed URL for relay:', error);
+          alert('Failed to access audio file for relay.');
+          return;
+        }
+      } else if (msg.audio_url) {
+        // For legacy/local files, fetch the audio URL for preview
+        const response = await fetch(msg.audio_url);
+        const audioBlob = await response.blob();
+        const audioChunks = [audioBlob];
+        setAudioChunks(audioChunks);
+        const audioURL = URL.createObjectURL(audioBlob);
+        setAudioURL(audioURL);
+        setShowRecorder(false); // Skip the recorder since we have existing audio
+      } else {
+        alert('No audio file available for relay.');
+        return;
+      }
+
+      // Open the voice popup
+      setVoicePopupOpen(true);
+
+    } catch (error) {
+      console.error('Error relaying voice message:', error);
+      alert('Failed to relay voice message. Please try again.');
+    }
+  };
+
   const navigateDate = (direction: 'prev' | 'next') => {
     const currentDate = new Date(selectedDate);
     if (direction === 'prev') {
@@ -726,32 +855,12 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
   };
 
   // Move these hooks to the top, before if (loading) return ...
-  const selected = new Date(selectedDate);
-  const [calendarMonth, setCalendarMonth] = useState(selected.getMonth());
-  const [calendarYear, setCalendarYear] = useState(selected.getFullYear());
-  const [showCalendar, setShowCalendar] = useState(false);
-  useEffect(() => {
-    const d = new Date(selectedDate);
-    setCalendarMonth(d.getMonth());
-    setCalendarYear(d.getFullYear());
-  }, [selectedDate]);
   const monthDays = getMonthDays(calendarYear, calendarMonth);
   const journalDates = new Set(journalLogs.map(j => j.timestamp && j.timestamp.split('T')[0]));
   const todayISO = toLocalDateString(new Date());
   const today = new Date(todayISO);
   const voiceMessageDates = new Set(voiceMessagesToday.map(m => m.reminder_date.split('T')[0]));
   const todayStr = toLocalDateString(today);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 loading-spinner mx-auto mb-4"></div>
-          <p className="text-white/80 font-medium">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   // In Journal, define a handler to close the popup and cancel recording if needed
   const handleCloseVoicePopup = () => {
@@ -774,30 +883,8 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
     setShowRecorder(false);
     setReminderDate(getTomorrowISO());
     setVoicePopupOpen(false);
+    setRelayAudioPath(null);
   };
-
-  // Helper to always fetch from Supabase, not local cache
-  const fetchVoiceMessagesToday = async () => {
-    if (!userId) return;
-    try {
-      const { data, error } = await supabase
-        .from('voice_messages')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      const today = toLocalDateString(new Date());
-      const todayMessages = (data || []).filter(msg => msg.reminder_date && msg.reminder_date.split('T')[0] === today);
-      setVoiceMessagesToday(todayMessages);
-    } catch (err) {
-      console.error('Error fetching voice messages from Supabase:', err);
-    }
-  };
-
-  // On mount and when userId changes, always fetch from Supabase
-  useEffect(() => {
-    fetchVoiceMessagesToday();
-  }, [userId]);
 
   return (
     <div className="min-h-screen flex flex-col items-center px-4 md:px-12 lg:px-24 py-10">
@@ -812,115 +899,136 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
           <p className="text-white/80 text-lg max-w-md">Reflect, write, and grow every day</p>
         </div>
 
-        {/* --- Voice Message to Future Self Section --- */}
-        <div
-          className="relative flex flex-col items-center justify-center bg-emerald-900/60 rounded-2xl p-4 border border-emerald-700 cursor-pointer hover:bg-emerald-900/80 transition mb-8"
-          onClick={() => setVoicePopupOpen(true)}
-          role="button"
-          tabIndex={0}
-          onKeyPress={e => { if (e.key === 'Enter' || e.key === ' ') setVoicePopupOpen(true); }}
-        >
-          <span className="absolute top-3 right-4 text-xs text-white/40 font-normal" style={{ letterSpacing: 0 }}>Tap to expand</span>
-          <div className="flex flex-col items-center justify-center w-full">
-            <Emoji emoji="⏳" png="hourglass.png" alt="future" size="xl" />
-            <span className="text-base font-normal text-emerald-100 text-center mt-2 block">
-              Send a voice message to your future self
-            </span>
+        {/* --- Voice Message to Future Self Section + Today's Voice Reminders (merged) --- */}
+        <div className="w-full mb-10">
+          <div className={`bg-emerald-900/60 rounded-2xl border border-emerald-700 transition-all duration-300 p-0`}>
+            {/* Voice Message to Future Self */}
+            <div
+              className="flex flex-col items-center justify-center p-6 cursor-pointer hover:bg-emerald-800/40 transition-colors relative"
+              onClick={() => setVoicePopupOpen(true)}
+            >
+              <Emoji emoji="⏳" png="hourglass.png" alt="future" size="xl" />
+              <span className="text-base font-normal text-emerald-100 text-center mt-2 block">
+                Send a voice message to your future self
+              </span>
+              <span className="absolute top-3 right-4 text-xs text-white/60 font-normal" style={{ letterSpacing: 0 }}>Tap to expand</span>
+            </div>
+            {/* Divider and Today's Voice Reminders - only show if there are messages today */}
+            {voiceMessagesToday.length > 0 && (
+              <>
+                {/* Divider */}
+                <div className="w-full flex justify-center">
+                  <div className="w-3/4 border-t-2 border-emerald-700/80 my-2" />
+                </div>
+                {/* Today's Voice Reminders */}
+                <div className={`${showRemindersSection ? 'p-6' : 'pt-4'}`}>
+                  <div
+                    className="flex items-center justify-between w-full mb-4 cursor-pointer hover:bg-emerald-800/20 transition-colors p-2 rounded-lg"
+                    onClick={() => setShowRemindersSection(!showRemindersSection)}
+                  >
+                    <div className="relative flex flex-col items-center justify-center w-full mb-4">
+                      <Emoji emoji="🔔" png="bell.png" alt="reminder" size="xl" />
+                      <span className="text-base font-normal text-emerald-100 text-center mt-2 block">
+                        Today's Voice Messages
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowRemindersSection(!showRemindersSection);
+                        }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-emerald-300 hover:text-emerald-100 transition"
+                        aria-label={showRemindersSection ? 'Collapse reminders' : 'Expand reminders'}
+                        style={{ lineHeight: 0 }}
+                      >
+                        {showRemindersSection ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="18 15 12 9 6 15" />
+                          </svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  {showRemindersSection && (
+                    <div className="space-y-3">
+                      {voiceMessagesToday.map(msg => (
+                        // Debug log for each message
+                        console.log('Voice message object:', msg),
+                        <div key={msg.id} className={`relative flex items-center justify-between rounded-2xl p-3 border transition ${msg.played
+                          ? 'bg-emerald-800/40 border-emerald-600/50'
+                          : 'bg-emerald-900/60 border-emerald-700 cursor-pointer hover:bg-emerald-900/80'
+                          }`}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-base font-normal block ${msg.played ? 'text-emerald-300/70' : 'text-emerald-100'
+                                }`}>
+                                {msg.title || 'Voice Message'}
+                              </span>
+                              {msg.played && (
+                                <span className="text-emerald-400 text-lg">✓</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              className={`px-3 py-1.5 font-semibold rounded-lg transition border text-sm flex items-center justify-center min-h-[32px]
+                                ${loadingMessageId === msg.id
+                                  ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                                  : playingMessageId === msg.id
+                                    ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                                    : 'bg-emerald-400 text-emerald-900 hover:bg-emerald-300 border-emerald-500'
+                                }`}
+                              onClick={() => {
+                                console.log('Voice message id:', msg.id);
+                                handlePlayVoice(msg.audio_path, msg.id!);
+                              }}
+                              disabled={loadingMessageId === msg.id || playingMessageId === msg.id}
+                            >
+                              {loadingMessageId === msg.id ? (
+                                <>
+                                  <div className="w-3 h-3 border border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                                  <span className="ml-2">Loading...</span>
+                                </>
+                              ) : playingMessageId === msg.id ? (
+                                <>
+                                  <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
+                                  <span className="ml-2">Playing</span>
+                                </>
+                              ) : (
+                                <span>Play</span>
+                              )}
+                            </button>
+                            <button
+                              className="px-3 py-1.5 bg-blue-500/20 text-blue-400 font-bold rounded-lg border border-blue-500/30 active:bg-blue-500/30 transition text-sm flex items-center justify-center min-h-[32px]"
+                              onClick={() => handleRelayVoice(msg)}
+                              disabled={loadingMessageId === msg.id || playingMessageId === msg.id}
+                            >
+                              <span>Relay</span>
+                            </button>
+                            <button
+                              className="px-3 py-1.5 bg-red-500/20 text-red-400 font-bold rounded-lg border border-red-500/30 active:bg-red-500/30 transition text-sm flex items-center justify-center min-h-[32px]"
+                              onClick={() => handleDeleteVoice(msg.id!, msg.audio_path)}
+                              disabled={loadingMessageId === msg.id || playingMessageId === msg.id}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 6h18" />
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
-
-        {/* --- Today's Voice Reminders --- */}
-        {voiceMessagesToday.length > 0 && (
-          <div className="w-full mb-10">
-            <div className="bg-emerald-900/60 rounded-2xl p-6 border border-emerald-700">
-              <div className="flex items-center justify-between w-full mb-4">
-                <div className="relative flex flex-col items-center justify-center w-full mb-4">
-                  <Emoji emoji="🔔" png="bell.png" alt="reminder" size="xl" />
-                  <span className="text-base font-normal text-emerald-100 text-center mt-2 block">
-                    Today's Voice Messages
-                  </span>
-                  <button
-                    onClick={() => setShowRemindersSection(!showRemindersSection)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-emerald-300 hover:text-emerald-100 transition"
-                    aria-label={showRemindersSection ? 'Collapse reminders' : 'Expand reminders'}
-                    style={{ lineHeight: 0 }}
-                  >
-                    {showRemindersSection ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="18 15 12 9 6 15" />
-                      </svg>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-              {showRemindersSection && (
-                <div className="space-y-3">
-                  {voiceMessagesToday.map(msg => (
-                    <div key={msg.id} className={`relative flex items-center justify-between rounded-2xl p-3 border transition ${msg.played
-                      ? 'bg-emerald-800/40 border-emerald-600/50'
-                      : 'bg-emerald-900/60 border-emerald-700 cursor-pointer hover:bg-emerald-900/80'
-                      }`}>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-base font-normal block ${msg.played ? 'text-emerald-300/70' : 'text-emerald-100'
-                            }`}>
-                            {msg.title || 'Voice Message'}
-                          </span>
-                          {msg.played && (
-                            <span className="px-2 py-1 bg-emerald-600/30 text-emerald-200 text-xs rounded-full border border-emerald-500/30">
-                              ✓ Played
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          className={`px-3 py-1.5 font-semibold rounded-lg transition border text-sm flex items-center gap-2 ${loadingMessageId === msg.id
-                            ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                            : playingMessageId === msg.id
-                              ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-                              : msg.played
-                                ? 'bg-emerald-600/40 text-emerald-300 border-emerald-600/50 hover:bg-emerald-600/60'
-                                : 'bg-emerald-400 text-emerald-900 hover:bg-emerald-300 border-emerald-500'
-                            }`}
-                          onClick={() => handlePlayVoice(msg.audio_path, msg.id!)}
-                          disabled={loadingMessageId === msg.id || playingMessageId === msg.id || typeof msg.id !== 'string' || !/^([0-9a-fA-F-]{36})$/.test(msg.id)}
-                        >
-                          {loadingMessageId === msg.id ? (
-                            <>
-                              <div className="w-3 h-3 border border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
-                              Loading...
-                            </>
-                          ) : playingMessageId === msg.id ? (
-                            <>
-                              <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
-                              Playing
-                            </>
-                          ) : msg.played ? (
-                            'Replay'
-                          ) : (
-                            'Play'
-                          )}
-                        </button>
-                        <button
-                          className="px-3 py-1.5 bg-red-500/20 text-red-400 font-bold rounded-lg border border-red-500/30 active:bg-red-500/30 transition text-sm"
-                          onClick={() => handleDeleteVoice(msg.id!, msg.audio_path)}
-                          disabled={loadingMessageId === msg.id || playingMessageId === msg.id}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -1058,9 +1166,9 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
               selectedDate={reminderDate}
               onSelect={date => { setReminderDate(date); setShowVoiceCalendar(false); }}
               markedDates={voiceMessageDates}
-              disabledDates={voiceMessageDates}
+              disabledDates={new Set()}
               allowFutureDates={true}
-              minDate={undefined}
+              minDate={getTomorrowISO()}
               voice_recording_calendar={true}
               trigger={
                 <button
@@ -1068,7 +1176,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
                   className="flex items-center justify-between w-full px-3 py-2 rounded-xl border border-emerald-700 bg-emerald-900/60 hover:bg-emerald-800/80 transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-400"
                 >
                   <span className="text-lg font-bold text-white text-left">
-                    {reminderDate ? formatCalendarDate(reminderDate) : 'Select date'}
+                    {reminderDate && !isNaN(new Date(reminderDate).getTime()) ? formatCalendarDate(reminderDate) : 'Select date'}
                   </span>
                   <span className="flex items-center justify-center w-10 h-10 rounded-xl ml-2">
                     <CalendarIcon size={24} className="text-emerald-300" />
@@ -1156,7 +1264,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
           <button
             className="w-full py-3 bg-emerald-400 text-emerald-900 font-bold text-base rounded-xl shadow-lg active:bg-emerald-300 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             onClick={handleSaveVoice}
-            disabled={!audioChunks.length || !reminderDate || savingVoice}
+            disabled={(!audioChunks.length && !audioURL && !relayAudioPath) || !reminderDate || savingVoice}
           >
             {savingVoice ? (
               <>
@@ -1177,6 +1285,10 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
 function formatCalendarDate(dateStr: string) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
+  // Check if the date is valid
+  if (isNaN(d.getTime())) {
+    return 'Invalid date';
+  }
   return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 }
 

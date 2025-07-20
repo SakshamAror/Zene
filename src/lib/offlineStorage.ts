@@ -107,6 +107,9 @@ class OfflineStorage {
             const pending = await this.get(STORAGE_KEYS.PENDING_SYNC) || [];
             pending.push(operation);
             await this.set(STORAGE_KEYS.PENDING_SYNC, pending);
+            if (operation.table === 'voice_messages' && operation.operation === 'update') {
+                console.log('addPendingSync for voice_messages:', operation);
+            }
         } catch (error) {
             console.error('Error adding pending sync:', error);
         }
@@ -180,88 +183,103 @@ class OfflineStorage {
                 successfulSyncs.push(operation.id);
                 continue;
             }
-            try {
-                switch (operation.operation) {
-                    case 'create':
-                        // Never send temp IDs to Supabase
-                        if (operation.data.id && typeof operation.data.id === 'string' && operation.data.id.startsWith('temp_')) {
-                            const { id, ...dataToSend } = operation.data;
-                            await supabase.from(operation.table).insert([dataToSend]);
-                        } else {
-                            await supabase.from(operation.table).insert([operation.data]);
-                        }
+            let operationSuccess = false;
+            let retryCount = 0;
+            const maxRetries = 3;
+
+            while (!operationSuccess && retryCount < maxRetries) {
+                try {
+                    switch (operation.operation) {
+                        case 'create':
+                            // Never send temp IDs to Supabase
+                            if (operation.data.id && typeof operation.data.id === 'string' && operation.data.id.startsWith('temp_')) {
+                                const { id, ...dataToSend } = operation.data;
+                                await supabase.from(operation.table).insert([dataToSend]);
+                            } else {
+                                await supabase.from(operation.table).insert([operation.data]);
+                            }
+                            break;
+                        case 'update':
+                            // Use composite keys for user tables
+                            if (operation.table === 'goals') {
+                                const { id, ...updates } = operation.data;
+                                await supabase.from('goals').update(updates)
+                                    .eq('user_id', updates.user_id)
+                                    .eq('timestamp', updates.timestamp);
+                            } else if (operation.table === 'journal_logs') {
+                                const { id, ...updates } = operation.data;
+                                await supabase.from('journal_logs').update(updates)
+                                    .eq('user_id', updates.user_id)
+                                    .eq('timestamp', updates.timestamp);
+                            } else if (operation.table === 'voice_messages') {
+                                const { id, ...updates } = operation.data;
+                                console.log('syncWithServer updating voice_message with id:', id, 'updates:', updates);
+                                await supabase.from('voice_messages').update(updates).eq('id', id);
+                            } else if (operation.table === 'user_book_status') {
+                                const { id, ...updates } = operation.data;
+                                await supabase.from('user_book_status').update(updates)
+                                    .eq('user_id', updates.user_id)
+                                    .eq('book_summary_id', updates.book_summary_id);
+                            } else if (operation.table === 'user_prefs') {
+                                const { id, ...updates } = operation.data;
+                                await supabase.from('user_prefs').update(updates)
+                                    .eq('user_id', updates.user_id);
+                            } else {
+                                // fallback for other tables
+                                await supabase.from(operation.table).update(operation.data)
+                                    .eq('user_id', operation.data.user_id);
+                            }
+                            break;
+                        case 'delete':
+                            // Use composite keys for user tables
+                            if (operation.table === 'goals') {
+                                const { id, user_id, timestamp } = operation.data;
+                                await supabase.from('goals').delete()
+                                    .eq('user_id', user_id)
+                                    .eq('timestamp', timestamp);
+                            } else if (operation.table === 'journal_logs') {
+                                const { id, user_id, timestamp } = operation.data;
+                                await supabase.from('journal_logs').delete()
+                                    .eq('user_id', user_id)
+                                    .eq('timestamp', timestamp);
+                            } else if (operation.table === 'meditation_sessions' || operation.table === 'work_sessions') {
+                                const { id, user_id, timestamp } = operation.data;
+                                await supabase.from(operation.table).delete()
+                                    .eq('user_id', user_id)
+                                    .eq('timestamp', timestamp);
+                            } else if (operation.table === 'user_book_status') {
+                                const { id, user_id, book_summary_id } = operation.data;
+                                await supabase.from('user_book_status').delete()
+                                    .eq('user_id', user_id)
+                                    .eq('book_summary_id', book_summary_id);
+                            } else if (operation.table === 'user_prefs') {
+                                const { id, user_id } = operation.data;
+                                await supabase.from('user_prefs').delete()
+                                    .eq('user_id', user_id);
+                            } else if (operation.table === 'voice_messages') {
+                                const { id } = operation.data;
+                                await supabase.from('voice_messages').delete()
+                                    .eq('id', id);
+                            } else {
+                                // fallback for other tables
+                                await supabase.from(operation.table).delete()
+                                    .eq('user_id', operation.data.user_id);
+                            }
+                            break;
+                    }
+                    operationSuccess = true;
+                    successfulSyncs.push(operation.id);
+                    if (operation.table === 'goals') goalsSyncNeeded = true;
+                } catch (error) {
+                    console.error(`Failed to sync operation (attempt ${retryCount + 1}):`, operation, error);
+                    retryCount++;
+                    if (retryCount >= maxRetries) {
+                        console.error(`Max retries reached for operation:`, operation);
                         break;
-                    case 'update':
-                        // Use composite keys for user tables
-                        if (operation.table === 'goals') {
-                            const { id, ...updates } = operation.data;
-                            await supabase.from('goals').update(updates)
-                                .eq('user_id', updates.user_id)
-                                .eq('timestamp', updates.timestamp);
-                        } else if (operation.table === 'journal_logs') {
-                            const { id, ...updates } = operation.data;
-                            await supabase.from('journal_logs').update(updates)
-                                .eq('user_id', updates.user_id)
-                                .eq('timestamp', updates.timestamp);
-                        } else if (operation.table === 'meditation_sessions' || operation.table === 'work_sessions') {
-                            const { id, ...updates } = operation.data;
-                            await supabase.from(operation.table).update(updates)
-                                .eq('user_id', updates.user_id)
-                                .eq('timestamp', updates.timestamp);
-                        } else if (operation.table === 'user_book_status') {
-                            const { id, ...updates } = operation.data;
-                            await supabase.from('user_book_status').update(updates)
-                                .eq('user_id', updates.user_id)
-                                .eq('book_summary_id', updates.book_summary_id);
-                        } else if (operation.table === 'user_prefs') {
-                            const { id, ...updates } = operation.data;
-                            await supabase.from('user_prefs').update(updates)
-                                .eq('user_id', updates.user_id);
-                        } else {
-                            // fallback for other tables
-                            await supabase.from(operation.table).update(operation.data)
-                                .eq('user_id', operation.data.user_id);
-                        }
-                        break;
-                    case 'delete':
-                        // Use composite keys for user tables
-                        if (operation.table === 'goals') {
-                            const { id, user_id, timestamp } = operation.data;
-                            await supabase.from('goals').delete()
-                                .eq('user_id', user_id)
-                                .eq('timestamp', timestamp);
-                        } else if (operation.table === 'journal_logs') {
-                            const { id, user_id, timestamp } = operation.data;
-                            await supabase.from('journal_logs').delete()
-                                .eq('user_id', user_id)
-                                .eq('timestamp', timestamp);
-                        } else if (operation.table === 'meditation_sessions' || operation.table === 'work_sessions') {
-                            const { id, user_id, timestamp } = operation.data;
-                            await supabase.from(operation.table).delete()
-                                .eq('user_id', user_id)
-                                .eq('timestamp', timestamp);
-                        } else if (operation.table === 'user_book_status') {
-                            const { id, user_id, book_summary_id } = operation.data;
-                            await supabase.from('user_book_status').delete()
-                                .eq('user_id', user_id)
-                                .eq('book_summary_id', book_summary_id);
-                        } else if (operation.table === 'user_prefs') {
-                            const { id, user_id } = operation.data;
-                            await supabase.from('user_prefs').delete()
-                                .eq('user_id', user_id);
-                        } else {
-                            // fallback for other tables
-                            await supabase.from(operation.table).delete()
-                                .eq('user_id', operation.data.user_id);
-                        }
-                        break;
+                    }
+                    // Wait before retrying with exponential backoff
+                    await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
                 }
-                successfulSyncs.push(operation.id);
-                if (operation.table === 'goals') goalsSyncNeeded = true;
-            } catch (error) {
-                console.error(`Failed to sync operation:`, operation, error);
-                // Keep the operation in pending sync for retry
-                continue;
             }
         }
 
@@ -663,6 +681,7 @@ class OfflineStorage {
             console.warn('Attempted to update goal with temporary ID:', id);
             return [];
         }
+
         if (this.isEnabled) {
             // Update locally
             const goals = await this.get(STORAGE_KEYS.GOALS) || [];
@@ -676,6 +695,7 @@ class OfflineStorage {
                 }
                 await this.set(STORAGE_KEYS.GOALS, goals);
             }
+
             // Add to pending sync (never send id to Supabase)
             const localGoal = goals.find((g: Goal) => g.id === id);
             if (localGoal) {
@@ -695,8 +715,13 @@ class OfflineStorage {
                 });
             }
             await this.syncWithServer();
+
+            // Return the updated goal
+            const updatedGoal = goals.find((g: Goal) => g.id === id);
+            return updatedGoal ? [updatedGoal] : [];
         }
-        // Always try to update server first (only for numeric IDs)
+
+        // Non-mobile: Always try to update server first (only for numeric IDs)
         if (typeof id === 'number') {
             try {
                 // Use user_id+timestamp as key
@@ -728,20 +753,10 @@ class OfflineStorage {
                 }
             } catch (error) {
                 console.error('Error updating goal:', error);
-                if (this.isEnabled) {
-                    const goals = await this.get(STORAGE_KEYS.GOALS) || [];
-                    const goal = goals.find((g: Goal) => g.id === id);
-                    return goal ? [goal] : [];
-                }
                 throw error;
             }
         } else {
-            // For temporary IDs, just return the local goal
-            if (this.isEnabled) {
-                const goals = await this.get(STORAGE_KEYS.GOALS) || [];
-                const goal = goals.find((g: Goal) => g.id === id);
-                return goal ? [goal] : [];
-            }
+            // For temporary IDs, just return empty array
             return [];
         }
     }
@@ -751,49 +766,58 @@ class OfflineStorage {
             console.warn('Attempted to delete goal with temporary ID:', id);
             return;
         }
+
         if (this.isEnabled) {
             // Remove locally
             const goals = await this.get(STORAGE_KEYS.GOALS) || [];
             const goal = goals.find((g: Goal) => g.id === id);
+
+            if (!goal) {
+                console.warn('Goal not found for deletion:', id);
+                return;
+            }
+
             const updatedGoals = goals.filter((g: Goal) => g.id !== id);
             await this.set(STORAGE_KEYS.GOALS, updatedGoals);
+
             // Add to pending sync (never send id to Supabase)
-            if (goal) {
-                await this.addPendingSync({
-                    id: id.toString(),
-                    operation: 'delete',
-                    table: 'goals',
-                    data: { user_id: goal.user_id, timestamp: goal.timestamp },
-                    timestamp: Date.now()
-                });
-            }
+            await this.addPendingSync({
+                id: id.toString(),
+                operation: 'delete',
+                table: 'goals',
+                data: { user_id: goal.user_id, timestamp: goal.timestamp },
+                timestamp: Date.now()
+            });
+
             await this.syncWithServer();
         }
-        // Always try to delete from server first (only for numeric IDs)
+
+        // Non-mobile: Always try to delete from server first (only for numeric IDs)
         if (typeof id === 'number') {
             try {
                 // Use user_id+timestamp as key
                 const goals = await this.get(STORAGE_KEYS.GOALS) || [];
                 const goal = goals.find((g: Goal) => g.id === id);
-                if (goal) {
-                    const { error } = await supabase
-                        .from('goals')
-                        .delete()
-                        .eq('user_id', goal.user_id)
-                        .eq('timestamp', goal.timestamp);
-                    if (error) throw error;
+
+                if (!goal) {
+                    console.warn('Goal not found for server deletion:', id);
+                    return;
+                }
+
+                const { error } = await supabase
+                    .from('goals')
+                    .delete()
+                    .eq('user_id', goal.user_id)
+                    .eq('timestamp', goal.timestamp);
+
+                if (error) {
+                    console.error('Supabase delete error:', error);
+                    throw error;
                 }
             } catch (error) {
                 console.error('Error deleting goal:', error);
-                if (this.isEnabled) {
-                    // Already removed locally
-                    return;
-                }
                 throw error;
             }
-        } else {
-            // For temporary IDs, just return (already removed locally)
-            return;
         }
     }
 
@@ -1336,35 +1360,18 @@ class OfflineStorage {
                     .eq('id', id);
                 if (error) throw error;
             } catch (error) {
-                console.error('Error marking voice message as played:', error);
-                throw error;
+                // handle error
             }
-            return;
-        }
-
-        // Mobile: update locally and sync
-        try {
-            const messages = await this.get(STORAGE_KEYS.VOICE_MESSAGES) || [];
-            const messageIndex = messages.findIndex((msg: VoiceMessage) => msg.id === id);
-            if (messageIndex >= 0) {
-                messages[messageIndex].played = true;
-                await this.set(STORAGE_KEYS.VOICE_MESSAGES, messages);
-
-                // Add to pending sync
-                await this.addPendingSync({
-                    id: String(id),
-                    operation: 'update',
-                    table: 'voice_messages',
-                    data: { played: true },
-                    timestamp: Date.now()
-                });
-
-                // Try to sync immediately
-                await this.syncWithServer();
-            }
-        } catch (error) {
-            console.error('Error marking voice message as played locally:', error);
-            throw error;
+        } else {
+            // Mobile/offline: queue for sync
+            await this.addPendingSync({
+                id: String(id),
+                operation: 'update',
+                table: 'voice_messages',
+                data: { id, played: true }, // <-- include id here!
+                timestamp: Date.now()
+            });
+            await this.syncWithServer(); // Ensure immediate sync
         }
     }
 
@@ -1396,7 +1403,7 @@ class OfflineStorage {
                 id: String(id),
                 operation: 'delete',
                 table: 'voice_messages',
-                data: { id: String(id) },
+                data: { id: id },
                 timestamp: Date.now()
             });
 
@@ -1405,6 +1412,82 @@ class OfflineStorage {
         } catch (error) {
             console.error('Error deleting voice message locally:', error);
             throw error;
+        }
+    }
+
+    // Clean up voice messages that weren't relayed by the end of the day
+    async cleanupExpiredVoiceMessages(): Promise<void> {
+        try {
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+
+            // Get all voice messages
+            const { data: allMessages, error } = await supabase
+                .from('voice_messages')
+                .select('*');
+
+            if (error) {
+                console.error('Error fetching voice messages for cleanup:', error);
+                return;
+            }
+
+            if (!allMessages) return;
+
+            // Find messages from previous days that haven't been relayed
+            const expiredMessages = allMessages.filter(msg => {
+                if (!msg.reminder_date) return false;
+
+                const reminderDate = msg.reminder_date.split('T')[0];
+                const reminderDateObj = new Date(reminderDate);
+                const todayObj = new Date(todayStr);
+
+                // Check if the reminder date is in the past
+                return reminderDateObj < todayObj;
+            });
+
+            console.log(`Found ${expiredMessages.length} expired voice messages to cleanup`);
+
+            // Delete each expired message
+            for (const msg of expiredMessages) {
+                try {
+                    // Delete from storage if it has an audio_path
+                    if (msg.audio_path) {
+                        const { error: storageError } = await supabase.storage
+                            .from('voice-messages')
+                            .remove([msg.audio_path]);
+
+                        if (storageError) {
+                            console.error('Error deleting audio file from storage:', storageError);
+                        }
+                    }
+
+                    // Delete from database
+                    const { error: dbError } = await supabase
+                        .from('voice_messages')
+                        .delete()
+                        .eq('id', msg.id);
+
+                    if (dbError) {
+                        console.error('Error deleting voice message from database:', dbError);
+                    } else {
+                        console.log(`Cleaned up voice message ${msg.id}`);
+                    }
+                } catch (error) {
+                    console.error('Error cleaning up voice message:', error);
+                }
+            }
+
+            // Update local storage if enabled
+            if (this.isEnabled) {
+                const localMessages = await this.get(STORAGE_KEYS.VOICE_MESSAGES) || [];
+                const updatedLocalMessages = localMessages.filter((localMsg: VoiceMessage) => {
+                    return !expiredMessages.some(expired => expired.id === localMsg.id);
+                });
+                await this.set(STORAGE_KEYS.VOICE_MESSAGES, updatedLocalMessages);
+            }
+
+        } catch (error) {
+            console.error('Error in voice message cleanup:', error);
         }
     }
 }
