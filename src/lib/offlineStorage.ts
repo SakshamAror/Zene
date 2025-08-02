@@ -924,10 +924,12 @@ class OfflineStorage {
         return data || [];
     }
 
-    async upsertUserBookStatus({ user_id, book_summary_id, is_favourite, timestamp }: {
+    async upsertUserBookStatus({ user_id, book_summary_id, is_favourite, is_read, bookmark_position, timestamp }: {
         user_id: string;
         book_summary_id: string;
         is_favourite: boolean;
+        is_read?: boolean;
+        bookmark_position?: number;
         timestamp?: string;
     }): Promise<UserBookStatus | null> {
         const tempId = `temp_${Date.now()}_${Math.random()}`;
@@ -937,6 +939,8 @@ class OfflineStorage {
             user_id,
             book_summary_id,
             is_favourite,
+            is_read: is_read || false,
+            bookmark_position: bookmark_position || 0,
             timestamp: ts
         };
 
@@ -1438,11 +1442,10 @@ class OfflineStorage {
                 if (!msg.reminder_date) return false;
 
                 const reminderDate = msg.reminder_date.split('T')[0];
-                const reminderDateObj = new Date(reminderDate);
-                const todayObj = new Date(todayStr);
 
-                // Check if the reminder date is in the past
-                return reminderDateObj < todayObj;
+                // Only delete messages that are strictly in the past (yesterday or earlier)
+                // Don't delete messages scheduled for today
+                return reminderDate < todayStr;
             });
 
             console.log(`Found ${expiredMessages.length} expired voice messages to cleanup`);
@@ -1450,23 +1453,36 @@ class OfflineStorage {
             // Delete each expired message
             for (const msg of expiredMessages) {
                 try {
-                    // Delete from storage if it has an audio_path
+                    let shouldDeleteAudio = true;
                     if (msg.audio_path) {
-                        const { error: storageError } = await supabase.storage
-                            .from('voice-messages')
-                            .remove([msg.audio_path]);
-
-                        if (storageError) {
-                            console.error('Error deleting audio file from storage:', storageError);
+                        // Check if any other entry exists with same audio_path and a future or today's reminder_date
+                        const { data: futureMsgs, error: checkError } = await supabase
+                            .from('voice_messages')
+                            .select('id,reminder_date')
+                            .eq('audio_path', msg.audio_path);
+                        if (!checkError && futureMsgs) {
+                            const today = new Date();
+                            const todayStr = today.toISOString().split('T')[0];
+                            shouldDeleteAudio = !futureMsgs.some(m => {
+                                if (!m.reminder_date) return false;
+                                const d = m.reminder_date.split('T')[0];
+                                return d >= todayStr;
+                            });
+                        }
+                        if (shouldDeleteAudio) {
+                            const { error: storageError } = await supabase.storage
+                                .from('voice-messages')
+                                .remove([msg.audio_path]);
+                            if (storageError) {
+                                console.error('Error deleting audio file from storage:', storageError);
+                            }
                         }
                     }
-
                     // Delete from database
                     const { error: dbError } = await supabase
                         .from('voice_messages')
                         .delete()
                         .eq('id', msg.id);
-
                     if (dbError) {
                         console.error('Error deleting voice message from database:', dbError);
                     } else {
@@ -1490,6 +1506,8 @@ class OfflineStorage {
             console.error('Error in voice message cleanup:', error);
         }
     }
+
+
 }
 
 // Export singleton instance

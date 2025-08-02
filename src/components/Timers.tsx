@@ -18,10 +18,23 @@ type TimerMode = 'meditation' | 'focus';
 function getStartOfWeek() {
     const now = new Date();
     const day = now.getDay(); // 0 (Sun) - 6 (Sat)
-    const diff = now.getDate() - day;
+    const diff = now.getDate() - ((day + 6) % 7); // Monday start
     const start = new Date(now.setDate(diff));
     start.setHours(0, 0, 0, 0);
     return start;
+}
+
+function getCurrentWeekRange() {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // Monday start
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6); // Sunday end
+    weekEnd.setHours(23, 59, 59, 999);
+
+    return { start: weekStart, end: weekEnd };
 }
 
 // Define prebuilt avatars (keep in sync with Settings.tsx)
@@ -101,13 +114,14 @@ function FriendsLeaderboard({ userId, mode = 'meditation', setCurrentView }: Fri
             if (profilesError) {
                 throw profilesError;
             }
-            // 3. Fetch weekly stats for all users
-            const startOfWeek = getStartOfWeek();
+            // 3. Fetch weekly stats for all users (current calendar week)
+            const { start: weekStart, end: weekEnd } = getCurrentWeekRange();
             const { data: meditationStats, error: meditationStatsError } = await supabase
                 .from('meditation_sessions')
                 .select('user_id, length, timestamp')
                 .in('user_id', allUserIds)
-                .gte('timestamp', startOfWeek.toISOString());
+                .gte('timestamp', weekStart.toISOString())
+                .lte('timestamp', weekEnd.toISOString());
             if (meditationStatsError) {
                 throw meditationStatsError;
             }
@@ -115,7 +129,8 @@ function FriendsLeaderboard({ userId, mode = 'meditation', setCurrentView }: Fri
                 .from('work_sessions')
                 .select('user_id, length, timestamp')
                 .in('user_id', allUserIds)
-                .gte('timestamp', startOfWeek.toISOString());
+                .gte('timestamp', weekStart.toISOString())
+                .lte('timestamp', weekEnd.toISOString());
             if (workStatsError) {
                 throw workStatsError;
             }

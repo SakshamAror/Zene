@@ -12,6 +12,7 @@ interface JournalProps {
   userId: string;
   voicePopupOpen: boolean;
   setVoicePopupOpen: (open: boolean) => void;
+  onVoiceMessageStatusChange?: () => void;
 }
 
 function getMonthDays(year: number, month: number) {
@@ -271,7 +272,7 @@ function VoiceMessagePopup({ show, onClose, children }: { show: boolean, onClose
   );
 }
 
-export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: JournalProps) {
+export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen, onVoiceMessageStatusChange }: JournalProps) {
   // Move all useState hooks above helper functions so they are available
   const [selectedDate, setSelectedDate] = useState(toLocalDateString(new Date()));
   const [content, setContent] = useState('');
@@ -375,6 +376,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
       const today = toLocalDateString(new Date());
       const todayMessages = (data || []).filter(msg => msg.reminder_date && msg.reminder_date.split('T')[0] === today);
       setVoiceMessagesToday(todayMessages);
+      if (onVoiceMessageStatusChange) onVoiceMessageStatusChange();
     } catch (err) {
       console.error('Error fetching voice messages from Supabase:', err);
     }
@@ -687,7 +689,6 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
         setLoadingMessageId(null);
         return;
       }
-      console.log('Playback URL:', playbackUrl);
 
       // Try to play the audio with the signed URL or fallback
       const audio = new Audio(playbackUrl);
@@ -720,13 +721,13 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
       audio.addEventListener('ended', async () => {
         setPlayingMessageId(null);
         // Mark as played in Supabase and refresh UI
-        console.log('Marking voice message as played. ID:', id);
         if (id === undefined || id === null) {
           console.error('Invalid voice message ID for markVoiceMessageAsPlayed:', id);
           alert('Error: Invalid voice message ID. Cannot mark as played.');
         } else {
           try {
             await markVoiceMessageAsPlayed(id);
+            if (onVoiceMessageStatusChange) onVoiceMessageStatusChange();
           } catch (err) {
             console.error('Failed to mark as played:', err);
           }
@@ -734,6 +735,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
         const today = toLocalDateString(new Date());
         getVoiceMessagesForDate(userId, today).then(messages => {
           setVoiceMessagesToday(messages);
+          if (onVoiceMessageStatusChange) onVoiceMessageStatusChange();
         });
       });
 
@@ -764,6 +766,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
     const today = toLocalDateString(new Date());
     const messages = await getVoiceMessagesForDate(userId, today);
     setVoiceMessagesToday(messages);
+    if (onVoiceMessageStatusChange) onVoiceMessageStatusChange();
     // Reset playing states if the deleted message was playing
     if (playingMessageId === id) {
       setPlayingMessageId(null);
@@ -821,7 +824,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
 
       // Open the voice popup
       setVoicePopupOpen(true);
-
+      if (onVoiceMessageStatusChange) onVoiceMessageStatusChange();
     } catch (error) {
       console.error('Error relaying voice message:', error);
       alert('Failed to relay voice message. Please try again.');
@@ -955,8 +958,6 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
                   {showRemindersSection && (
                     <div className="space-y-3">
                       {voiceMessagesToday.map(msg => (
-                        // Debug log for each message
-                        console.log('Voice message object:', msg),
                         <div key={msg.id} className={`relative flex items-center justify-between rounded-2xl p-3 border transition ${msg.played
                           ? 'bg-emerald-800/40 border-emerald-600/50'
                           : 'bg-emerald-900/60 border-emerald-700 cursor-pointer hover:bg-emerald-900/80'
@@ -982,7 +983,6 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen }: J
                                     : 'bg-emerald-400 text-emerald-900 hover:bg-emerald-300 border-emerald-500'
                                 }`}
                               onClick={() => {
-                                console.log('Voice message id:', msg.id);
                                 handlePlayVoice(msg.audio_path, msg.id!);
                               }}
                               disabled={loadingMessageId === msg.id || playingMessageId === msg.id}

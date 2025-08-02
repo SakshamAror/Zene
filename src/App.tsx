@@ -10,7 +10,7 @@ import Analytics from './components/Analytics.tsx';
 import { Home, Clock, Target, BookOpen, PenTool, BarChart3, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
 import Settings from './components/Settings';
 import Onboarding from './components/Onboarding';
-import { getUserPrefs, upsertUserPrefs, saveMeditationSession, getMeditationSessions, getWorkSessions, getFriendNotifications } from './lib/saveData';
+import { getUserPrefs, upsertUserPrefs, saveMeditationSession, getMeditationSessions, getWorkSessions, getFriendNotifications, getVoiceMessagesForDate } from './lib/saveData';
 import type { MeditationSession, WorkSession } from './types';
 import { supabase } from './lib/supabase';
 
@@ -41,6 +41,7 @@ function App() {
   const [hasFriendNotifications, setHasFriendNotifications] = useState(false);
   const [timerActive, setTimerActive] = useState(false); // NEW STATE
   const [voicePopupOpen, setVoicePopupOpen] = useState(false);
+  const [hasUnplayedVoiceMessageToday, setHasUnplayedVoiceMessageToday] = useState(false);
 
   // Expose a refresh function for instant notification updates
   const refreshFriendNotifications = async () => {
@@ -91,6 +92,28 @@ function App() {
     interval = setInterval(refreshFriendNotifications, 30000);
     return () => { if (interval) clearInterval(interval); };
   }, [user?.id]);
+
+  async function checkUnplayedVoiceMessages() {
+    if (!user?.id) {
+      setHasUnplayedVoiceMessageToday(false);
+      return;
+    }
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+    try {
+      const messages = await getVoiceMessagesForDate(user.id, todayStr);
+      const hasUnplayed = messages.some(msg => msg.played === false);
+      setHasUnplayedVoiceMessageToday(hasUnplayed);
+    } catch {
+      setHasUnplayedVoiceMessageToday(false);
+    }
+  }
+  useEffect(() => {
+    checkUnplayedVoiceMessages();
+  }, [user?.id, voicePopupOpen]);
 
   // Scroll to top on view change
   useEffect(() => {
@@ -227,7 +250,12 @@ function App() {
       case 'goals':
         return <Goals userId={user.id} needsInitialGoals={needsInitialGoals} onFirstGoal={() => setNeedsInitialGoals(false)} />;
       case 'journal':
-        return <Journal userId={user.id} voicePopupOpen={voicePopupOpen} setVoicePopupOpen={setVoicePopupOpen} />;
+        return <Journal
+          userId={user.id}
+          voicePopupOpen={voicePopupOpen}
+          setVoicePopupOpen={setVoicePopupOpen}
+          onVoiceMessageStatusChange={checkUnplayedVoiceMessages}
+        />;
       case 'learn':
         return <Learn userId={user.id} onBookOpen={() => setBookPopupOpen(true)} onBookClose={() => setBookPopupOpen(false)} />;
       case 'settings':
@@ -267,6 +295,9 @@ function App() {
                     <span style={{ position: 'relative', display: 'inline-block' }}>
                       <Icon size={20} />
                       {item.id === 'settings' && hasFriendNotifications && (
+                        <span style={{ position: 'absolute', top: -4, right: -4, width: 10, height: 10, background: '#ef4444', borderRadius: '50%', zIndex: 10 }} />
+                      )}
+                      {item.id === 'journal' && hasUnplayedVoiceMessageToday && (
                         <span style={{ position: 'absolute', top: -4, right: -4, width: 10, height: 10, background: '#ef4444', borderRadius: '50%', zIndex: 10 }} />
                       )}
                     </span>

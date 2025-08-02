@@ -78,14 +78,16 @@ export async function getUserBookStatus(user_id: string) {
   return await offlineStorage.getUserBookStatus(user_id);
 }
 
-// Upsert (insert or update) user book status (read/favourite)
-export async function upsertUserBookStatus({ user_id, book_summary_id, is_favourite, timestamp }: {
+// Upsert (insert or update) user book status (read/favourite/bookmark)
+export async function upsertUserBookStatus({ user_id, book_summary_id, is_favourite, is_read, bookmark_position, timestamp }: {
   user_id: string;
   book_summary_id: string;
   is_favourite: boolean;
+  is_read?: boolean;
+  bookmark_position?: number;
   timestamp?: string;
 }) {
-  return await offlineStorage.upsertUserBookStatus({ user_id, book_summary_id, is_favourite, timestamp });
+  return await offlineStorage.upsertUserBookStatus({ user_id, book_summary_id, is_favourite, is_read, bookmark_position, timestamp });
 }
 
 // Fetch user preferences from user_prefs table
@@ -157,3 +159,4 @@ export async function deleteVoiceMessage(id: string | number) {
 export async function cleanupExpiredVoiceMessages() {
   return await offlineStorage.cleanupExpiredVoiceMessages();
 }
+

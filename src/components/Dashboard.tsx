@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Clock, Target, PenTool, TrendingUp, Calendar, Award, ChevronRight, Play, Sparkles, Zap, Heart, Star, Coffee, Sunrise, Moon } from 'lucide-react';
-import { getMeditationSessions, getWorkSessions, getJournalLogs, getGoals, getUserPrefs } from '../lib/saveData';
+import { getMeditationSessions, getWorkSessions, getJournalLogs, getGoals, getUserPrefs, upsertUserPrefs } from '../lib/saveData';
 import type { MeditationSession, WorkSession, JournalLog, Goal } from '../types';
 import { LineChart, Line, XAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Emoji } from './Emoji';
@@ -33,6 +33,46 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
   const [meditations, setMeditations] = useState<MeditationSession[]>([]);
   const [workSessions, setWorkSessions] = useState<WorkSession[]>([]);
   const [mainGoal, setMainGoal] = useState<string | null>(null);
+  const [userStreak, setUserStreak] = useState<{ current_streak: number; longest_streak: number } | null>(null);
+
+  // Simple streak calculation function
+  const calculateStreak = (meditations: MeditationSession[], workSessions: WorkSession[], meditationGoal: number, focusGoal: number) => {
+    const today = new Date();
+    let streak = 0;
+    let consecutiveMissedDays = 0;
+
+    // Go back up to 1825 days (5 years)
+    for (let i = 0; i < 1825; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+
+      const meditationSeconds = meditations
+        .filter(m => m.timestamp && m.timestamp.split('T')[0] === dateStr)
+        .reduce((sum, m) => sum + m.length, 0);
+      const workSeconds = workSessions
+        .filter(w => w.timestamp && w.timestamp.split('T')[0] === dateStr)
+        .reduce((sum, w) => sum + w.length, 0);
+
+      const reachedMeditationGoal = meditationSeconds >= (meditationGoal * 60);
+      const reachedFocusGoal = workSeconds >= (focusGoal * 60);
+      const hasGoal = reachedMeditationGoal || reachedFocusGoal;
+
+      if (hasGoal) {
+        streak++;
+        consecutiveMissedDays = 0;
+      } else {
+        consecutiveMissedDays++;
+
+        // Break streak if we have 2 or more consecutive missed days
+        if (consecutiveMissedDays >= 2) {
+          break;
+        }
+      }
+    }
+
+    return streak;
+  };
 
   useEffect(() => {
     async function fetchPrefs() {
@@ -64,6 +104,8 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
     }
     fetchPrefs();
   }, [userId]);
+
+
 
   useEffect(() => {
     if (!showStreakInfo) return;
@@ -109,17 +151,19 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
       const currentMeditationGoal = userPrefs?.meditation_goal || 2;
       const currentFocusGoal = userPrefs?.focus_goal || 120;
 
-      const newStreak = calculateStreak(meditations, workSessions, journals, currentMeditationGoal, currentFocusGoal);
-
       const todayStr = new Date().toISOString().split('T')[0];
       const todayMeditationRaw = meditations.filter(m => m.timestamp && m.timestamp.split('T')[0] === todayStr).reduce((sum, session) => sum + session.length, 0) / 60;
       const todayWorkRaw = workSessions.filter(w => w.timestamp && w.timestamp.split('T')[0] === todayStr).reduce((sum, session) => sum + session.length, 0) / 60;
+
+      // Calculate streak using simple function
+      const currentStreak = calculateStreak(meditations, workSessions, currentMeditationGoal, currentFocusGoal);
+
       setStats({
         totalMeditation: Math.round(totalMeditation / 60),
         totalWork: Math.round(totalWork / 60),
         journalEntries: journals.length,
         completedGoals,
-        streak: newStreak,
+        streak: currentStreak,
         todayMeditation: todayMeditationRaw,
         todayWork: todayWorkRaw,
         journalToday: journals.some(j => j.timestamp && j.timestamp.split('T')[0] === todayStr),
@@ -131,63 +175,7 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
     }
   };
 
-  // Updated streak logic: streak resets only if more than 2 missed days in a rolling 7-day window
-  const calculateStreak = (
-    meditations: MeditationSession[],
-    workSessions: WorkSession[],
-    journals: JournalLog[],
-    meditationGoal: number,
-    focusGoal: number
-  ) => {
-    const today = new Date();
-    let streak = 0;
-    let consecutiveMissedDays = 0;
-    let consecutiveGoalDays = 0;
 
-    // Go back up to 30 days
-    for (let i = 0; i < 30; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-
-      const meditationSeconds = meditations
-        .filter(m => m.timestamp && m.timestamp.split('T')[0] === dateStr)
-        .reduce((sum, m) => sum + m.length, 0);
-      const workSeconds = workSessions
-        .filter(w => w.timestamp && w.timestamp.split('T')[0] === dateStr)
-        .reduce((sum, w) => sum + w.length, 0);
-
-      const reachedMeditationGoal = meditationSeconds >= (meditationGoal * 60);
-      const reachedFocusGoal = workSeconds >= (focusGoal * 60);
-      const hasGoal = reachedMeditationGoal || reachedFocusGoal;
-
-      if (hasGoal) {
-        streak++;
-        consecutiveMissedDays = 0; // Reset consecutive missed days
-        consecutiveGoalDays++;
-
-        // If user has 2 or more consecutive goal days, reset the missed day counter
-        // This allows streak to continue even after some missed days
-        if (consecutiveGoalDays >= 2) {
-          consecutiveMissedDays = 0;
-        }
-      } else {
-        consecutiveMissedDays++;
-        consecutiveGoalDays = 0; // Reset consecutive goal days
-
-        // Break streak if we have 3 or more consecutive missed days (meaning 2 full days have passed)
-        // This allows the current day to be the 2nd consecutive missed day without breaking
-        if (consecutiveMissedDays >= 3) {
-          break;
-        }
-
-        // For the first 2 missed days, continue counting but don't increment streak
-        // This allows for 2 grace days (including the current day)
-      }
-    }
-
-    return streak;
-  };
 
   const getUserName = () => {
     if (user) {

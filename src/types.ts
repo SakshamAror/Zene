@@ -59,6 +59,8 @@ export interface UserBookStatus {
   user_id: string;
   book_summary_id: string;
   is_favourite: boolean;
+  is_read: boolean;
+  bookmark_position: number;
   timestamp: string;
 }
 
@@ -82,3 +84,4 @@ export interface VoiceMessage {
   title?: string; // Optional title for the message
   played?: boolean; // Whether the user has played this message
 }
+

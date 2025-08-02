@@ -777,6 +777,16 @@ html {
   }
 }
 
+/* Hide scrollbar for popup */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Zene custom slider styles */
 .zene-slider {
   width: 100%;
