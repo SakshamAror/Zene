@@ -379,9 +379,9 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
   const userName = getUserName();
 
   return (
-    <div className="min-h-screen flex flex-col items-center px-4 md:px-12 lg:px-24 py-10">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 md:px-12 lg:px-24 py-10">
       {/* Welcome Section */}
-      <div className="text-center mb-8 w-full max-w-2xl pt-8">
+      <div className="text-center mb-12 w-full max-w-2xl">
         <div className="w-16 h-16 mb-6 flex items-center justify-center mx-auto animate-float">
           <Emoji emoji="👋" png="wave-hand.png" alt="wave" size="2xl" style={!isAppleDevice() ? { transform: 'rotate(-40deg)' } : {}} />
         </div>
@@ -393,31 +393,213 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
         </p>
       </div>
 
-      {/* Main Tasks - Duolingo Style */}
-      <div className="w-full max-w-sm mx-auto space-y-6 mb-8 flex-1 flex flex-col justify-center">
-        {/* Meditation Task */}
-        <div
-          className="duolingo-task-card cursor-pointer"
-          onClick={() => setCurrentView('timers')}
-        >
-          <div className="relative">
-            {/* Progress Ring */}
-            <div className="relative w-20 h-20 mx-auto mb-4">
-              <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 80 80">
+      {/* Responsive Main Content Grid */}
+      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        {/* Left: Streak & Chart */}
+        <div className="flex flex-col items-center space-y-8">
+          {/* Streak Display */}
+          <div className="text-center w-full">
+            <div
+              className="relative w-24 h-24 mx-auto mb-4 cursor-pointer"
+              ref={streakRef}
+              onClick={() => setShowStreakInfo(!showStreakInfo)}
+            >
+              {/* Streak At Risk background text */}
+              {(!hasGoalToday && stats.streak >= 1) && (
+                <div
+                  className="animate-pulse absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+                  style={{
+                    zIndex: 0,
+                    fontSize: '3rem',
+                    fontWeight: 900,
+                    color: 'rgba(255, 115, 0, 0.5)',
+                    letterSpacing: '-0.04em',
+                    textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                  }}
+                >
+                  STREAK AT RISK
+                </div>
+              )}
+              {/* Flame effects */}
+              <div className="absolute inset-0" style={{ zIndex: 1 }}>
+                {(() => {
+                  const maxFlames = 32; // Increased from 20 to 32 for more flames
+                  const minSize = 20;
+                  const maxSize = 62;
+                  const minGlow = 0.5;
+                  const maxGlow = 1.0;
+                  const k = 12;
+                  const progress = 1 - Math.exp(-Math.max(0, stats.streak) / k);
+                  const flameCount = Math.round(maxFlames * progress);
+                  const minAngle = -225 * Math.PI / 180;
+                  const maxAngle = 45 * Math.PI / 180;
+                  // Center and radius for flame placement
+                  const centerX = 48; // match the actual center of the 96x96 div
+                  const centerY = 48;
+                  const baseRadius = 38; // slightly less than before to keep flames closer
+                  const flames = [];
+                  if (flameCount > 0) {
+                    // Precompute all base angles for uniform distribution
+                    const baseAngles = [];
+                    for (let i = 0; i < flameCount; i++) {
+                      baseAngles.push(minAngle + (i / (flameCount - 1 || 1)) * (maxAngle - minAngle));
+                    }
+                    // Shuffle the baseAngles array for random order
+                    for (let i = baseAngles.length - 1; i > 0; i--) {
+                      const j = Math.floor(Math.random() * (i + 1));
+                      [baseAngles[i], baseAngles[j]] = [baseAngles[j], baseAngles[i]];
+                    }
+                    for (let i = 0; i < flameCount; i++) {
+                      const baseAngle = baseAngles[i];
+                      const angleJitter = (Math.random() - 0.5) * (Math.PI / 32); // up to ~5.6 degrees of jitter
+                      const angle = baseAngle + angleJitter;
+                      const size = minSize + (maxSize - minSize) * progress;
+                      const radiusJitter = (Math.random() - 0.5) * 4; // up to +/-2px radius jitter
+                      const radius = baseRadius + radiusJitter;
+                      const x = centerX + radius * Math.cos(angle) - size / 2;
+                      const y = centerY + radius * Math.sin(angle) - size / 2;
+                      const vertical = Math.sin(angle);
+                      const glow = minGlow + (maxGlow - minGlow) * progress * (1 - 0.5 * (vertical > 0.3 ? vertical : 0));
+                      const opacity = 1;
+                      flames.push(
+                        <span
+                          key={i}
+                          style={{
+                            position: 'absolute',
+                            left: `${x}px`,
+                            top: `${y}px`,
+                            width: `${size}px`,
+                            height: `${size}px`,
+                            filter: `drop-shadow(0 0 ${6 + size / 2}px rgba(255,140,0,${glow}))`,
+                            opacity,
+                            pointerEvents: 'none',
+                            zIndex: 1,
+                            animation: `flame-flicker 1.2s infinite ${i * 0.15}s`,
+                          }}
+                        >
+                          <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+                            <path d="M16 30c6-4 8-8 8-12 0-6-4-10-8-14-4 4-8 8-8 14 0 4 2 8 8 12z" fill="url(#fireGradient)" />
+                            <defs>
+                              <radialGradient id="fireGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                                <stop offset="0%" stopColor="#fffbe6" />
+                                <stop offset="60%" stopColor="#ffb300" />
+                                <stop offset="100%" stopColor="#ff5722" />
+                              </radialGradient>
+                            </defs>
+                          </svg>
+                        </span>
+                      );
+                    }
+                  }
+                  return flames;
+                })()}
+              </div>
+              <div
+                className="w-24 h-24 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-full flex items-center justify-center border border-orange-500/30 relative"
+                style={{
+                  zIndex: 2,
+                  boxShadow: (!hasGoalToday && stats.streak >= 1) ? '0 0 40px 12px rgba(0,0,0,0.45)' : undefined
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: '60%',
+                  height: '60%',
+                  borderRadius: '50%',
+                  background: 'rgba(20,20,20,0.85)',
+                  zIndex: 2,
+                  pointerEvents: 'none',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)'
+                }} />
+                <span className="text-2xl font-bold text-orange-400 z-10" style={{ position: 'relative', zIndex: 3, textShadow: '0 2px 8px #000, 0 0px 2px #000' }}>
+                  {stats.streak}
+                </span>
+                {/* Info icon in top-right corner */}
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 6,
+                    right: 8,
+                    zIndex: 4,
+                    background: 'rgba(0,0,0,0.6)',
+                    borderRadius: '50%',
+                    width: 18,
+                    height: 18,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 13,
+                    color: '#fff',
+                    pointerEvents: 'none',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.18)'
+                  }}
+                  aria-label="Info"
+                >
+                  i
+                </span>
+                {showStreakInfo && (
+                  <div
+                    className="absolute left-1/2 top-full mt-2 w-56 bg-black text-white text-xs rounded-lg px-3 py-2 shadow-lg z-50 -translate-x-1/2"
+                    style={{ whiteSpace: 'normal' }}
+                  >
+                    Your streak continues if you meet at least one goal (focus or meditation) each day. You have a few grace days if you miss.
+                  </div>
+                )}
+              </div>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-1">Streak</h3>
+            <p className="text-white/70 text-sm">Days active</p>
+          </div>
+
+          {/* Mini 7-day Chart */}
+          <div className="w-full cursor-pointer" onClick={() => setCurrentView('analytics')}>
+            <div className="bg-emerald-900/60 rounded-2xl p-3 border border-emerald-700">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-xs text-emerald-300 font-semibold">7 Day Activity</span>
+                <span className="text-xs text-white/40">Tap to expand</span>
+              </div>
+              <ResponsiveContainer width="100%" height={100}>
+                <LineChart data={getLast7DaysData()} margin={{ top: 5, right: 8, left: 8, bottom: 0 }}>
+                  <XAxis dataKey="date" tickFormatter={d => new Date(d).getDate().toString()} stroke="rgba(255,255,255,0.4)" fontSize={10} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: 'rgba(20,30,30,0.95)', borderRadius: 12, border: 'none', color: '#fff', fontSize: 12 }} />
+                  <Line type="monotone" dataKey="meditation" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: '#10b981' }} activeDot={{ r: 5 }} name="Meditation" />
+                  <Line type="monotone" dataKey="work" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3, fill: '#3b82f6' }} activeDot={{ r: 5 }} name="Focus" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Progress & Journal */}
+        <div className="flex flex-col items-center space-y-8">
+          {/* Meditation Progress */}
+          <div
+            className="text-center cursor-pointer transition-transform hover:scale-105 w-full"
+            onClick={() => setCurrentView('timers')}
+          >
+            <div className="relative w-24 h-24 mx-auto mb-4">
+              <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 80 80">
                 <circle
                   cx="40"
                   cy="40"
                   r="32"
-                  stroke="rgba(255, 255, 255, 0.15)"
-                  strokeWidth="6"
+                  stroke="rgba(255, 255, 255, 0.2)"
+                  strokeWidth="4"
                   fill="none"
                 />
                 <circle
                   cx="40"
                   cy="40"
                   r="32"
-                  stroke="#10b981"
-                  strokeWidth="6"
+                  stroke="#a7f3d0"
+                  strokeWidth="4"
                   fill="none"
                   strokeDasharray={`${2 * Math.PI * 32}`}
                   strokeDashoffset={`${2 * Math.PI * 32 * (1 - Math.min(todayMeditationSecondsRounded / (meditationGoal * 60), 1))}`}
@@ -426,41 +608,34 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                  <Emoji emoji="🧘" png="mindfulness.png" alt="meditation" size="md" />
-                </div>
+                <span className="text-xl font-bold text-white">{Math.floor(stats.todayMeditation)}m</span>
               </div>
             </div>
-            <h3 className="text-xl font-bold text-white mb-1 text-center">Meditation</h3>
-            <p className="text-white/70 text-sm text-center">
-              {Math.floor(stats.todayMeditation)}m / {meditationGoal}m today
-            </p>
+            <h3 className="text-xl font-bold text-white mb-1">Meditation</h3>
+            <p className="text-white/70 text-sm">Goal: {meditationGoal}m</p>
           </div>
-        </div>
 
-        {/* Focus Task */}
-        <div
-          className="duolingo-task-card cursor-pointer"
-          onClick={() => setCurrentView('timers')}
-        >
-          <div className="relative">
-            {/* Progress Ring */}
-            <div className="relative w-20 h-20 mx-auto mb-4">
-              <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 80 80">
+          {/* Focus Progress */}
+          <div
+            className="text-center cursor-pointer transition-transform hover:scale-105 w-full"
+            onClick={() => setCurrentView('timers')}
+          >
+            <div className="relative w-24 h-24 mx-auto mb-4">
+              <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 80 80">
                 <circle
                   cx="40"
                   cy="40"
                   r="32"
-                  stroke="rgba(255, 255, 255, 0.15)"
-                  strokeWidth="6"
+                  stroke="rgba(255, 255, 255, 0.2)"
+                  strokeWidth="4"
                   fill="none"
                 />
                 <circle
                   cx="40"
                   cy="40"
                   r="32"
-                  stroke="#3b82f6"
-                  strokeWidth="6"
+                  stroke="#60a5fa"
+                  strokeWidth="4"
                   fill="none"
                   strokeDasharray={`${2 * Math.PI * 32}`}
                   strokeDashoffset={`${2 * Math.PI * 32 * (1 - Math.min(todayWorkSecondsRounded / (focusGoal * 60), 1))}`}
@@ -469,108 +644,38 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
-                  <Emoji emoji="🎯" png="goal.png" alt="focus" size="md" />
-                </div>
+                <span className="text-xl font-bold text-white">{Math.floor(stats.todayWork)}m</span>
               </div>
             </div>
-            <h3 className="text-xl font-bold text-white mb-1 text-center">Focus</h3>
-            <p className="text-white/70 text-sm text-center">
-              {Math.floor(stats.todayWork)}m / {focusGoal}m today
-            </p>
+            <h3 className="text-xl font-bold text-white mb-1">Focus</h3>
+            <p className="text-white/70 text-sm">Goal: {focusGoal}m</p>
           </div>
-        </div>
 
-        {/* Journal Task */}
-        <div
-          className="duolingo-task-card cursor-pointer"
-          onClick={() => setCurrentView('journal')}
-        >
-          <div className="relative">
-            {/* Status Ring */}
-            <div className="relative w-20 h-20 mx-auto mb-4">
-              <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 80 80">
-                <circle
-                  cx="40"
-                  cy="40"
-                  r="32"
-                  stroke="rgba(255, 255, 255, 0.15)"
-                  strokeWidth="6"
-                  fill="none"
-                />
-                {stats.journalToday && (
-                  <circle
-                    cx="40"
-                    cy="40"
-                    r="32"
-                    stroke="#8b5cf6"
-                    strokeWidth="6"
-                    fill="none"
-                    strokeDasharray={`${2 * Math.PI * 32}`}
-                    strokeDashoffset="0"
-                    className="transition-all duration-1000 ease-out"
-                    strokeLinecap="round"
-                  />
-                )}
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${
-                  stats.journalToday ? 'bg-purple-500' : 'bg-gray-500'
-                }`}>
-                  <Emoji emoji="📝" png="notebook.png" alt="journal" size="md" />
-                </div>
-              </div>
-            </div>
-            <h3 className="text-xl font-bold text-white mb-1 text-center">Journal</h3>
-            <p className="text-white/70 text-sm text-center">
-              {stats.journalToday ? 'Complete for today' : 'Write today'}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Streak & Analytics Section */}
-      <div className="w-full max-w-sm mx-auto mb-8">
-        <div className="flex items-center justify-between">
-          {/* Streak Display */}
-          <div className="text-center">
-            <div
-              className="relative w-16 h-16 mx-auto mb-2 cursor-pointer"
-              ref={streakRef}
-              onClick={() => setShowStreakInfo(!showStreakInfo)}
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-500/30 to-red-500/30 rounded-full flex items-center justify-center border-2 border-orange-400/50">
-                <span className="text-lg font-bold text-orange-400">
-                  {stats.streak}
-                </span>
-              </div>
-              {showStreakInfo && (
-                <div className="absolute left-1/2 top-full mt-2 w-48 bg-black/90 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-50 -translate-x-1/2">
-                  Your streak continues if you meet at least one goal each day.
-                </div>
+          {/* Journal Status */}
+          <div
+            className="text-center cursor-pointer transition-transform hover:scale-105 w-full"
+            onClick={() => setCurrentView('journal')}
+          >
+            <div className="w-24 h-24 mx-auto mb-4 bg-purple-800/40 rounded-full flex items-center justify-center border border-purple-500/50">
+              {stats.journalToday ? (
+                <Emoji emoji="✓" png="check.png" alt="check" size="3xl" className="text-purple-400" />
+              ) : (
+                <Emoji emoji="📝" png="notebook.png" alt="journal" size="2xl" />
               )}
             </div>
-            <p className="text-white/70 text-xs">Streak</p>
-          </div>
-
-          {/* Analytics Button */}
-          <div className="text-center">
-            <button
-              onClick={() => setCurrentView('analytics')}
-              className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center border-2 border-emerald-400/50 mb-2"
-            >
-              <BarChart3 size={20} className="text-emerald-400" />
-            </button>
-            <p className="text-white/70 text-xs">Stats</p>
+            <h3 className="text-xl font-bold text-white mb-1">Journal</h3>
+            <p className="text-white/70 text-sm">
+              {stats.journalToday ? 'Complete' : 'Write today'}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="w-full max-w-sm mx-auto space-y-4 mb-8">
+      <div className="w-full max-w-2xl space-y-4">
         <button
           onClick={() => setCurrentView('timers')}
-          className="w-full py-4 px-6 bg-emerald-400 text-emerald-900 font-bold text-lg rounded-2xl shadow-lg active:bg-emerald-300 transition-all duration-200 flex items-center justify-center space-x-2"
+          className="w-full py-4 px-6 bg-emerald-400 text-emerald-900 font-bold text-lg rounded-2xl shadow-lg active:bg-emerald-300 transition flex items-center justify-center space-x-2"
         >
           <Play size={20} />
           <span>Start Session</span>
@@ -579,14 +684,14 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
         <div className="grid grid-cols-2 gap-4">
           <button
             onClick={() => setCurrentView('goals')}
-            className="py-3 px-4 bg-emerald-900/40 text-emerald-200 font-semibold rounded-xl border border-emerald-700/50 active:bg-emerald-800/60 transition-all duration-200 flex flex-col items-center space-y-1"
+            className="py-3 px-4 bg-emerald-900/60 text-emerald-200 font-semibold rounded-xl border border-emerald-700 active:bg-emerald-800 transition flex flex-col items-center space-y-1"
           >
             <Target size={20} />
             <span className="text-sm">Goals</span>
           </button>
           <button
             onClick={() => setCurrentView('learn')}
-            className="py-3 px-4 bg-emerald-900/40 text-emerald-200 font-semibold rounded-xl border border-emerald-700/50 active:bg-emerald-800/60 transition-all duration-200 flex flex-col items-center space-y-1"
+            className="py-3 px-4 bg-emerald-900/60 text-emerald-200 font-semibold rounded-xl border border-emerald-700 active:bg-emerald-800 transition flex flex-col items-center space-y-1"
           >
             <Star size={20} />
             <span className="text-sm">Learn</span>
@@ -595,7 +700,7 @@ export default function Dashboard({ userId, user, setCurrentView }: DashboardPro
       </div>
 
       {/* Motivational Footer */}
-      <div className="text-center w-full max-w-sm mx-auto">
+      <div className="mt-12 text-center w-full max-w-2xl">
         <p className="text-white/60 text-sm">
           Great minds don't wander, they conquer.
         </p>
