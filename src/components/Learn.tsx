@@ -74,30 +74,59 @@ function renderInlineFormatting(text: string) {
 }
 
 export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
+  // Call onBookOpen/onBookClose to notify App.tsx to hide/show navbar
+
+  // Helper: check if book is favourited
+  const isBookFavourited = (bookId: string) => {
+    const bookStatus = userBookStatus.find(status => status.book_summary_id === bookId);
+    return bookStatus?.is_favourite || false;
+  };
+
+  // Handler: open book detail
+  const handleBookClick = (book: BookSummary) => {
+    setSelectedBook(book);
+    // bookPopupOpen is managed by showBookPopup and transitioning
+    // Notify App.tsx to hide navbar instantly when opening
+    if (onBookOpen) onBookOpen(); // Only call once
+  };
+
+  // Handler: close book detail
+  const closeBookModal = () => {
+    // Only close if not already transitioning out
+    if (!transitioning && showBookPopup) {
+      setTransitioning(true);
+      setShowBookPopup(false); // Ensure navbar and category bar reappear instantly
+      if (onBookClose) onBookClose(); // Show navbar instantly
+      // Remove delay: fade out animation only happens once, then clear state immediately
+      setTransitioning(false);
+      setSelectedBook(null);
+      // Refresh books page after closing summary
+      loadData();
+    }
+  };
   const [bookSummaries, setBookSummaries] = useState<BookSummary[]>([]);
   const [userBookStatus, setUserBookStatus] = useState<UserBookStatus[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [loading, setLoading] = useState(true);
   const [selectedBook, setSelectedBook] = useState<BookSummary | null>(null);
+  const [showBookPopup, setShowBookPopup] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
+  // Helper: get all categories from bookSummaries
+  const categories = ['all', ...Array.from(new Set(bookSummaries.map(b => b.category).filter(Boolean)))];
 
   // Gradient visibility state for unread and read lists
   const [showLeftUnread, setShowLeftUnread] = useState(false);
   const [showRightUnread, setShowRightUnread] = useState(false);
   const [showLeftRead, setShowLeftRead] = useState(false);
   const [showRightRead, setShowRightRead] = useState(false);
-  const [showLeftFavorites, setShowLeftFavorites] = useState(false);
-  const [showRightFavorites, setShowRightFavorites] = useState(false);
   const unreadRef = useRef<HTMLDivElement>(null);
   const readRef = useRef<HTMLDivElement>(null);
-  const favoritesRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
 
   // Infinite scroll visible counts
   const [unreadVisibleCount, setUnreadVisibleCount] = useState(5);
   const [readVisibleCount, setReadVisibleCount] = useState(5);
-  const [favoritesVisibleCount, setFavoritesVisibleCount] = useState(5);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -126,6 +155,20 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
   useEffect(() => {
     loadData();
   }, [userId]);
+
+  useEffect(() => {
+    loadData();
+  }, [userId]);
+
+  useEffect(() => {
+    if (selectedBook && !showBookPopup) {
+      setTransitioning(true);
+      setShowBookPopup(true);
+      if (onBookOpen) onBookOpen();
+      setTransitioning(false);
+    }
+    // Do not handle closing here; closeBookModal handles closing logic and animation
+  }, [selectedBook, showBookPopup, onBookOpen]);
 
   useEffect(() => {
     if (selectedBook) {
@@ -240,79 +283,63 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
     };
   }, [selectedBook]);
 
-  const filteredBooks = bookSummaries.filter(book => {
+  // --- Search logic update ---
+  const searchFilteredBooks = bookSummaries.filter(book => {
     const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       book.summary.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
-    const bookStatus = userBookStatus.find(status => status.book_summary_id === book.id);
-    const isRead = bookStatus?.is_read || false;
-    return matchesSearch && matchesCategory && !isRead;
+    return matchesSearch && matchesCategory;
   });
 
-  const categories = ['all', ...new Set(bookSummaries.map(book => book.category).filter(Boolean))];
-
-  const isBookFavourited = (bookId: string) => {
-    return userBookStatus.find(status => status.book_summary_id === bookId)?.is_favourite || false;
-  };
-
-  const handleBookClick = (book: BookSummary) => {
-    setSelectedBook(book);
-    setTransitioning(true);
-    if (typeof onBookOpen === 'function') onBookOpen();
-  };
-
-  // Animate popup in on open
-  useEffect(() => {
-    if (selectedBook) {
-      setTimeout(() => setTransitioning(false), 10); // allow mount, then animate in
+  const filteredBooks = searchFilteredBooks.filter(book => {
+    const bookStatus = userBookStatus.find(status => status.book_summary_id === book.id);
+    const isRead = bookStatus?.is_read || false;
+    const hasBookmark = (bookStatus?.bookmark_position || 0) > 0;
+    return !isRead && !hasBookmark;
+  }).sort((a, b) => {
+    const aStatus = userBookStatus.find(status => status.book_summary_id === a.id);
+    const bStatus = userBookStatus.find(status => status.book_summary_id === b.id);
+    // Favourites leftmost, then by most recent timestamp (descending)
+    if ((bStatus?.is_favourite ? 1 : 0) !== (aStatus?.is_favourite ? 1 : 0)) {
+      return (bStatus?.is_favourite ? 1 : 0) - (aStatus?.is_favourite ? 1 : 0);
     }
-  }, [selectedBook]);
+    return (bStatus?.timestamp || '').localeCompare(aStatus?.timestamp || '');
+  });
 
-  const closeBookModal = () => {
-    setTransitioning(true);
-    setTimeout(() => {
-      setSelectedBook(null);
-      setTransitioning(false);
-      if (typeof onBookClose === 'function') onBookClose();
-    }, 300); // match transition duration
-  };
+  const currentlyReadingSummaries = searchFilteredBooks.filter(book => {
+    const bookStatus = userBookStatus.find(status => status.book_summary_id === book.id);
+    const isRead = bookStatus?.is_read || false;
+    const hasBookmark = (bookStatus?.bookmark_position || 0) > 0;
+    return !isRead && hasBookmark;
+  }).sort((a, b) => {
+    // Sort by most recent bookmark timestamp (descending)
+    const aStatus = userBookStatus.find(status => status.book_summary_id === a.id);
+    const bStatus = userBookStatus.find(status => status.book_summary_id === b.id);
+    if ((bStatus?.is_favourite ? 1 : 0) !== (aStatus?.is_favourite ? 1 : 0)) {
+      return (bStatus?.is_favourite ? 1 : 0) - (aStatus?.is_favourite ? 1 : 0);
+    }
+    return (bStatus?.timestamp || '').localeCompare(aStatus?.timestamp || '');
+  });
 
-  // Favorite summaries: all favorited books (read or unread)
-  const favoriteSummaries = bookSummaries
-    .filter(book => {
-      const bookStatus = userBookStatus.find(status => status.book_summary_id === book.id);
-      return bookStatus?.is_favourite || false;
-    })
-    .sort((a, b) => {
-      const aStatus = userBookStatus.find(status => status.book_summary_id === a.id);
-      const bStatus = userBookStatus.find(status => status.book_summary_id === b.id);
-      // Sort by most recent timestamp (descending)
-      return (bStatus?.timestamp || '').localeCompare(aStatus?.timestamp || '');
-    });
-
-  // Read summaries: favourited leftmost (most recent first), then unfavourited (most recent first)
-  const readSummaries = bookSummaries
-    .filter(book => {
-      const bookStatus = userBookStatus.find(status => status.book_summary_id === book.id);
-      return bookStatus?.is_read || false;
-    })
-    .sort((a, b) => {
-      const aStatus = userBookStatus.find(status => status.book_summary_id === a.id);
-      const bStatus = userBookStatus.find(status => status.book_summary_id === b.id);
-      // Favourited books first
-      if ((bStatus?.is_favourite ? 1 : 0) !== (aStatus?.is_favourite ? 1 : 0)) {
-        return (bStatus?.is_favourite ? 1 : 0) - (aStatus?.is_favourite ? 1 : 0);
-      }
-      // Within each group, sort by most recent timestamp (descending)
-      return (bStatus?.timestamp || '').localeCompare(aStatus?.timestamp || '');
-    });
+  const readSummaries = searchFilteredBooks.filter(book => {
+    const bookStatus = userBookStatus.find(status => status.book_summary_id === book.id);
+    return bookStatus?.is_read || false;
+  }).sort((a, b) => {
+    const aStatus = userBookStatus.find(status => status.book_summary_id === a.id);
+    const bStatus = userBookStatus.find(status => status.book_summary_id === b.id);
+    // Favourited books first
+    if ((bStatus?.is_favourite ? 1 : 0) !== (aStatus?.is_favourite ? 1 : 0)) {
+      return (bStatus?.is_favourite ? 1 : 0) - (aStatus?.is_favourite ? 1 : 0);
+    }
+    // Within each group, sort by most recent timestamp (descending)
+    return (bStatus?.timestamp || '').localeCompare(aStatus?.timestamp || '');
+  });
 
   useEffect(() => {
     // On mount or when books change, reset visible counts
     setUnreadVisibleCount(5);
     setReadVisibleCount(5);
-    setFavoritesVisibleCount(5);
-  }, [filteredBooks.length, readSummaries.length, favoriteSummaries.length]);
+  }, [filteredBooks.length, readSummaries.length]);
 
   useEffect(() => {
     // On mount, check initial state
@@ -387,20 +414,23 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
         book_summary_id: bookId,
         is_favourite: existingStatus?.is_favourite || false,
         is_read: true,
-        bookmark_position: existingStatus?.bookmark_position || 0,
+        bookmark_position: 0, // Reset bookmark when marking as read
         timestamp: new Date().toISOString(),
       });
       setUserBookStatus(prev => {
         const filtered = prev.filter(status => status.book_summary_id !== bookId);
-        return [...filtered, {
-          id: existingStatus?.id || `temp-${Date.now()}`,
-          user_id: userId,
-          book_summary_id: bookId,
-          is_favourite: existingStatus?.is_favourite || false,
-          is_read: true,
-          bookmark_position: existingStatus?.bookmark_position || 0,
-          timestamp: new Date().toISOString().split('T')[0],
-        }];
+        return [
+          ...filtered,
+          {
+            id: existingStatus?.id || `temp-${Date.now()}`,
+            user_id: userId,
+            book_summary_id: bookId,
+            is_favourite: existingStatus?.is_favourite || false,
+            is_read: true,
+            bookmark_position: 0, // Ensure bookmark is reset
+            timestamp: new Date().toISOString().split('T')[0],
+          },
+        ];
       });
       // Automatically close the popup after marking as read
       closeBookModal();
@@ -408,6 +438,53 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
       console.error('Error marking as read:', error);
     }
   };
+
+  const handleMarkAsUnread = async (bookId: string) => {
+    try {
+      const existingStatus = userBookStatus.find(status => status.book_summary_id === bookId);
+      await upsertUserBookStatus({
+        user_id: userId,
+        book_summary_id: bookId,
+        is_favourite: existingStatus?.is_favourite || false,
+        is_read: false,
+        bookmark_position: 0, // Reset bookmark when marking as unread
+        timestamp: new Date().toISOString(),
+      });
+      setUserBookStatus(prev => {
+        const filtered = prev.filter(status => status.book_summary_id !== bookId);
+        return [
+          ...filtered,
+          {
+            id: existingStatus?.id || `temp-${Date.now()}`,
+            user_id: userId,
+            book_summary_id: bookId,
+            is_favourite: existingStatus?.is_favourite || false,
+            is_read: false,
+            bookmark_position: 0,
+            timestamp: new Date().toISOString().split('T')[0],
+          },
+        ];
+      });
+    } catch (error) {
+      console.error('Error marking as unread:', error);
+    }
+  };
+
+  // Auto-scroll to bookmark when opening a book summary with a bookmark
+  useEffect(() => {
+    if (selectedBook && popupRef.current) {
+      const bookStatus = userBookStatus.find(status => status.book_summary_id === selectedBook.id);
+      const bookmark = bookStatus?.bookmark_position || 0;
+      if (bookmark > 0) {
+        setTimeout(() => {
+          if (!popupRef.current) return;
+          const scrollHeight = popupRef.current.scrollHeight - popupRef.current.clientHeight;
+          const targetScroll = Math.round((bookmark / 100) * scrollHeight);
+          popupRef.current.scrollTo({ top: targetScroll, behavior: 'smooth' });
+        }, 100); // Wait for popup to mount
+      }
+    }
+  }, [selectedBook, userBookStatus]);
 
   const handleSetBookmark = async (bookId: string) => {
     try {
@@ -477,8 +554,8 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
           <p className="text-white/80 text-lg max-w-md">Discover wisdom from great books</p>
         </div>
 
-        {/* Search and Categories - Responsive Row */}
-        <div className="flex flex-col md:flex-row md:items-center md:space-x-4 mb-8 w-full">
+        {/* Navigation bar with more spacing and clear section labels */}
+        <div className={`flex flex-col md:flex-row md:items-center md:space-x-8 mb-12 w-full justify-center transition-opacity duration-300 ${transitioning ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
           <div className="flex-1 mb-4 md:mb-0">
             <div className="relative">
               <input
@@ -506,159 +583,181 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
           </div>
         </div>
 
-        {/* Unread Books - Horizontal Scroll */}
-        <div className="w-full max-w-4xl mb-12 relative">
-          <div
-            className="flex flex-row space-x-6 overflow-x-auto pb-2 custom-scrollbar-horizontal"
-            style={{ minHeight: '200px' }}
-            ref={unreadRef}
-            onScroll={() => updateGradientAndLoadMore(unreadRef, setShowLeftUnread, setShowRightUnread, unreadVisibleCount, setUnreadVisibleCount, filteredBooks.length)}
-          >
-            {filteredBooks.length > 0 ? (
-              filteredBooks.slice(0, unreadVisibleCount).map((book) => (
-                <div
-                  key={book.id}
-                  onClick={() => handleBookClick(book)}
-                  className="bg-emerald-900/60 p-4 rounded-2xl border border-emerald-700 hover:bg-emerald-800/60 transition-all cursor-pointer min-w-[260px] max-w-[260px] flex-shrink-0"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-white mb-2 line-clamp-2">
-                        {book.title}
-                      </h3>
-                      {book.category && (
-                        <span className="inline-block px-3 py-1 bg-emerald-400/20 text-emerald-300 text-xs font-medium rounded-full">
-                          {book.category}
-                        </span>
-                      )}
+        {/* Section spacing and clear labels */}
+        <div className="space-y-16 w-full">
+          {/* Unread Books - Horizontal Scroll (no title) */}
+          <div className="w-full max-w-4xl mb-12 relative">
+            <div
+              className="flex flex-row space-x-8 overflow-x-auto pb-4 custom-scrollbar-horizontal"
+              style={{ minHeight: '200px' }}
+              ref={unreadRef}
+              onScroll={() => updateGradientAndLoadMore(unreadRef, setShowLeftUnread, setShowRightUnread, unreadVisibleCount, setUnreadVisibleCount, filteredBooks.length)}
+            >
+              {filteredBooks.length > 0 ? (
+                filteredBooks.slice(0, unreadVisibleCount).map((book) => (
+                  <div
+                    key={book.id}
+                    onClick={() => handleBookClick(book)}
+                    className="bg-emerald-900/60 p-5 rounded-2xl border border-emerald-700 hover:bg-emerald-800/60 transition-all cursor-pointer min-w-[260px] max-w-[260px] flex-shrink-0 shadow-lg"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-white mb-2 line-clamp-2">
+                          {book.title}
+                        </h3>
+                        {book.category && (
+                          <span className="inline-block px-3 py-1 bg-emerald-400/20 text-emerald-300 text-xs font-medium rounded-full">
+                            {book.category}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFavourite(book.id);
+                        }}
+                        className={`p-2 rounded-xl transition-colors ${isBookFavourited(book.id)
+                          ? 'bg-yellow-500/20 text-yellow-400'
+                          : 'bg-emerald-800/60 text-emerald-300 hover:text-yellow-400'
+                          }`}
+                      >
+                        <Star size={16} fill={isBookFavourited(book.id) ? 'currentColor' : 'none'} />
+                      </button>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleFavourite(book.id);
-                      }}
-                      className={`p-2 rounded-xl transition-colors ${isBookFavourited(book.id)
-                        ? 'bg-yellow-500/20 text-yellow-400'
-                        : 'bg-emerald-800/60 text-emerald-300 hover:text-yellow-400'
-                        }`}
-                    >
-                      <Star size={16} fill={isBookFavourited(book.id) ? 'currentColor' : 'none'} />
-                    </button>
+                    <p className="text-emerald-200 text-sm leading-relaxed line-clamp-3">
+                      {book.summary}
+                    </p>
                   </div>
-                  <p className="text-emerald-200 text-sm leading-relaxed line-clamp-3">
-                    {book.summary}
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 min-w-[260px] w-full">
+                  <Emoji emoji="🔍" png="search.png" alt="search" className="text-6xl mb-4 w-16 h-16 object-contain" />
+                  <h3 className="text-xl font-bold text-white mb-2">No books found</h3>
+                  <p className="text-white/70 text-center">
+                    {searchTerm || selectedCategory !== 'all'
+                      ? 'Try adjusting your search or filters'
+                      : 'Book summaries will appear here'
+                    }
                   </p>
-
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-12 min-w-[260px]">
-                <Emoji emoji="🔍" png="search.png" alt="search" className="text-6xl mb-4 w-16 h-16 object-contain" />
-                <h3 className="text-xl font-bold text-white mb-2">No books found</h3>
-                <p className="text-white/70">
-                  {searchTerm || selectedCategory !== 'all'
-                    ? 'Try adjusting your search or filters'
-                    : 'Book summaries will appear here'
-                  }
-                </p>
-              </div>
+              )}
+            </div>
+            {/* Dynamic gradient overlays only if there are books */}
+            {filteredBooks.length > 0 && showRightUnread && (
+              <div className="pointer-events-none absolute top-0 right-0 h-full w-8 z-10" style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.18), transparent)' }} />
+            )}
+            {filteredBooks.length > 0 && showLeftUnread && (
+              <div className="pointer-events-none absolute top-0 left-0 h-full w-8 z-10" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.18), transparent)' }} />
             )}
           </div>
-          {/* Dynamic gradient overlays */}
-          {showRightUnread && (
-            <div className="pointer-events-none absolute top-0 right-0 h-full w-8 z-10" style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.18), transparent)' }} />
+
+          {/* Currently Reading Books - Horizontal Scroll (moved below unread, brown bookmark) */}
+          {currentlyReadingSummaries.length > 0 && (
+            <div className="w-full max-w-4xl mb-12 relative">
+              <h3 className="text-xl font-bold text-white mb-6 text-center tracking-wide">Currently Reading</h3>
+              <div
+                className="flex flex-row space-x-8 overflow-x-auto pb-4 custom-scrollbar-horizontal"
+                style={{ minHeight: '200px' }}
+                ref={unreadRef}
+                onScroll={() => updateGradientAndLoadMore(unreadRef, setShowLeftUnread, setShowRightUnread, unreadVisibleCount, setUnreadVisibleCount, currentlyReadingSummaries.length)}
+              >
+                {currentlyReadingSummaries.slice(0, unreadVisibleCount).map((book) => (
+                  <div
+                    key={book.id}
+                    onClick={() => handleBookClick(book)}
+                    className="bg-emerald-900/60 p-5 rounded-2xl border border-emerald-700 hover:bg-emerald-800/60 transition-all cursor-pointer min-w-[260px] max-w-[260px] flex-shrink-0 shadow-lg"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-white mb-2 line-clamp-2">
+                          {book.title}
+                        </h3>
+                        {book.category && (
+                          <span className="inline-block px-3 py-1 bg-emerald-400/20 text-emerald-300 text-xs font-medium rounded-full">
+                            {book.category}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFavourite(book.id);
+                        }}
+                        className={`p-2 rounded-xl transition-colors ${isBookFavourited(book.id)
+                          ? 'bg-yellow-500/20 text-yellow-400'
+                          : 'bg-emerald-800/60 text-emerald-300 hover:text-yellow-400'
+                          }`}
+                      >
+                        <Star size={16} fill={isBookFavourited(book.id) ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
+                    <p className="text-emerald-200 text-sm leading-relaxed line-clamp-3">
+                      {book.summary}
+                    </p>
+                    {/* Show bookmark progress */}
+                    <div className="mt-2 flex items-center space-x-2">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="currentColor" />
+                      </svg>
+                      <span className="text-xs text-amber-400 font-semibold">{getBookmarkPosition(book.id)}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Dynamic gradient overlays */}
+              {showRightUnread && (
+                <div className="pointer-events-none absolute top-0 right-0 h-full w-8 z-10" style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.18), transparent)' }} />
+              )}
+              {showLeftUnread && (
+                <div className="pointer-events-none absolute top-0 left-0 h-full w-8 z-10" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.18), transparent)' }} />
+              )}
+            </div>
           )}
-          {showLeftUnread && (
-            <div className="pointer-events-none absolute top-0 left-0 h-full w-8 z-10" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.18), transparent)' }} />
+
+          {/* Read Summaries - Horizontal Scroll */}
+          {readSummaries.length > 0 && (
+            <div className="w-full max-w-4xl mb-12 relative">
+              <h3 className="text-xl font-bold text-white mb-6 text-center tracking-wide">Your Read Summaries</h3>
+              <div
+                className="flex flex-row space-x-8 overflow-x-auto pb-4 custom-scrollbar-horizontal"
+                style={{ minHeight: '160px' }}
+                ref={readRef}
+                onScroll={() => updateGradientAndLoadMore(readRef, setShowLeftRead, setShowRightRead, readVisibleCount, setReadVisibleCount, readSummaries.length)}
+              >
+                {readSummaries.slice(0, readVisibleCount).map((book) => (
+                  <div
+                    key={book.id}
+                    onClick={() => handleBookClick(book)}
+                    className="bg-emerald-400/20 p-5 rounded-2xl border border-emerald-400/30 hover:bg-emerald-400/30 transition-all cursor-pointer min-w-[220px] max-w-[220px] flex-shrink-0 shadow-lg"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <h4 className="font-semibold text-emerald-200 line-clamp-1">{book.title}</h4>
+                      {isBookFavourited(book.id) && (
+                        <Star className="text-yellow-400 ml-2 flex-shrink-0" size={14} fill="currentColor" />
+                      )}
+                    </div>
+                    <div className="text-xs text-emerald-300 mb-1">{book.category}</div>
+                    <div className="text-sm text-emerald-200 line-clamp-2">
+                      {book.summary.substring(0, 100)}...
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Dynamic gradient overlays */}
+              {showRightRead && (
+                <div className="pointer-events-none absolute top-0 right-0 h-full w-8 z-10" style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.18), transparent)' }} />
+              )}
+              {showLeftRead && (
+                <div className="pointer-events-none absolute top-0 left-0 h-full w-8 z-10" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.18), transparent)' }} />
+              )}
+            </div>
           )}
         </div>
 
-        {/* Favorite Summaries - Horizontal Scroll */}
-        {favoriteSummaries.length > 0 && (
-          <div className="w-full max-w-4xl mb-12 relative">
-            <h3 className="text-xl font-bold text-white mb-4 text-center">Your Favorites</h3>
-            <div
-              className="flex flex-row space-x-6 overflow-x-auto pb-2 custom-scrollbar-horizontal"
-              style={{ minHeight: '160px' }}
-              ref={favoritesRef}
-              onScroll={() => updateGradientAndLoadMore(favoritesRef, setShowLeftFavorites, setShowRightFavorites, favoritesVisibleCount, setFavoritesVisibleCount, favoriteSummaries.length)}
-            >
-              {favoriteSummaries.slice(0, favoritesVisibleCount).map((book) => (
-                <div
-                  key={book.id}
-                  onClick={() => handleBookClick(book)}
-                  className="bg-yellow-400/20 p-3 rounded-2xl border border-yellow-400/30 hover:bg-yellow-400/30 transition-all cursor-pointer min-w-[220px] max-w-[220px] flex-shrink-0"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-semibold text-yellow-200 line-clamp-1">{book.title}</h4>
-                    <Star className="text-yellow-400 ml-2 flex-shrink-0" size={14} fill="currentColor" />
-                  </div>
-                  <div className="text-xs text-yellow-300 mb-1">{book.category}</div>
-                  <div className="text-sm text-yellow-200 line-clamp-2">
-                    {book.summary.substring(0, 100)}...
-                  </div>
-                  {isBookRead(book.id) && (
-                    <div className="flex items-center space-x-1 mt-2">
-                      <Check className="text-emerald-400" size={12} />
-                      <span className="text-xs text-emerald-400">Read</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            {/* Dynamic gradient overlays */}
-            {showRightFavorites && (
-              <div className="pointer-events-none absolute top-0 right-0 h-full w-8 z-10" style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.18), transparent)' }} />
-            )}
-            {showLeftFavorites && (
-              <div className="pointer-events-none absolute top-0 left-0 h-full w-8 z-10" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.18), transparent)' }} />
-            )}
-          </div>
-        )}
-
-        {/* Read Summaries - Horizontal Scroll */}
-        {readSummaries.length > 0 && (
-          <div className="w-full max-w-4xl mb-12 relative">
-            <h3 className="text-xl font-bold text-white mb-4 text-center">Your Read Summaries</h3>
-            <div
-              className="flex flex-row space-x-6 overflow-x-auto pb-2 custom-scrollbar-horizontal"
-              style={{ minHeight: '160px' }}
-              ref={readRef}
-              onScroll={() => updateGradientAndLoadMore(readRef, setShowLeftRead, setShowRightRead, readVisibleCount, setReadVisibleCount, readSummaries.length)}
-            >
-              {readSummaries.slice(0, readVisibleCount).map((book) => (
-                <div
-                  key={book.id}
-                  onClick={() => handleBookClick(book)}
-                  className="bg-emerald-400/20 p-3 rounded-2xl border border-emerald-400/30 hover:bg-emerald-400/30 transition-all cursor-pointer min-w-[220px] max-w-[220px] flex-shrink-0"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-semibold text-emerald-200 line-clamp-1">{book.title}</h4>
-                    {isBookFavourited(book.id) && (
-                      <Star className="text-yellow-400 ml-2 flex-shrink-0" size={14} fill="currentColor" />
-                    )}
-                  </div>
-                  <div className="text-xs text-emerald-300 mb-1">{book.category}</div>
-                  <div className="text-sm text-emerald-200 line-clamp-2">
-                    {book.summary.substring(0, 100)}...
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Dynamic gradient overlays */}
-            {showRightRead && (
-              <div className="pointer-events-none absolute top-0 right-0 h-full w-8 z-10" style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.18), transparent)' }} />
-            )}
-            {showLeftRead && (
-              <div className="pointer-events-none absolute top-0 left-0 h-full w-8 z-10" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.18), transparent)' }} />
-            )}
-          </div>
-        )}
-
         {/* Progress Bar - fixed to viewport (outside popup) */}
-        {selectedBook && (
+        {showBookPopup && selectedBook && (
           <div
-            className={`fixed top-1/2 right-4 w-2 h-64 bg-white/10 rounded-full z-[50] overflow-hidden transform -translate-y-1/2 transition-opacity duration-500 ${scrollProgress > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            className={`fixed top-1/2 right-4 w-2 h-64 bg-white/10 rounded-full z-[60] overflow-hidden transform -translate-y-1/2 transition-opacity duration-500 ${scrollProgress > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           >
             <div
               className="w-2 bg-emerald-400 rounded-full transition-all duration-500 ease-out"
@@ -679,9 +778,9 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
         )}
 
         {/* Bookmark button at top of progress bar */}
-        {selectedBook && (
+        {showBookPopup && selectedBook && (
           <div
-            className={`fixed top-1/2 right-1 transform z-[50] transition-all duration-500 ease-out ${scrollProgress > 0 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4 pointer-events-none'}`}
+            className={`fixed top-1/2 right-1 transform z-[60] transition-all duration-500 ease-out ${scrollProgress > 0 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4 pointer-events-none'}`}
             style={{ transform: 'translateY(-170px)' }}
           >
             <button
@@ -703,15 +802,13 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
         )}
 
         {/* Scroll to Top Nudge */}
-        {selectedBook && (
+        {showBookPopup && selectedBook && (
           <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999] transition-all duration-500 ease-in-out ${showScrollToTop ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
             <button
               onClick={() => {
                 if (popupRef.current) {
                   popupRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-                  // Hide the button immediately when clicked
                   setShowScrollToTop(false);
-                  // Clear any existing timeout
                   if (scrollTimeoutRef.current) {
                     clearTimeout(scrollTimeoutRef.current);
                     scrollTimeoutRef.current = null;
@@ -729,68 +826,74 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
         )}
 
         {/* Book Detail Popup Page */}
-        {selectedBook && (
-          <div
-            ref={popupRef}
-            className={`fixed inset-0 z-40 bg-gradient-to-b from-emerald-900 to-emerald-700 transition-all duration-300 ease-in-out flex flex-col min-h-screen w-screen h-screen overflow-y-auto scrollbar-hide ${transitioning ? 'opacity-0 translate-y-8 pointer-events-none' : 'opacity-100 translate-y-0'}`}
-          >
-
-
-            <div className="absolute top-0 left-0 p-4 z-50">
-              <button
-                className="bg-emerald-900/80 rounded-full p-2 shadow-md border border-emerald-700 text-emerald-200 hover:bg-emerald-800/90 transition"
-                onClick={closeBookModal}
-                aria-label="Back to Learn"
-              >
-                <X size={22} />
-              </button>
-            </div>
-            <div className="w-full max-w-2xl mx-auto pt-20 pb-10 px-4">
-
+        {/* Book Detail Popup Page - Timers.tsx style animation logic, always rendered for transition */}
+        {/* Book Detail Popup Page - Timers.tsx style animation logic, always rendered for transition */}
+        <div
+          ref={popupRef}
+          className={`fixed inset-0 z-50 min-h-screen bg-gradient-to-b from-emerald-900 to-emerald-700 flex flex-col w-screen h-screen overflow-y-auto scrollbar-hide transition-all duration-300 ${showBookPopup || transitioning ? (transitioning ? 'opacity-0 translate-y-8 pointer-events-none' : 'opacity-100 translate-y-0') : 'opacity-0 translate-y-8 pointer-events-none'}`}
+          role="dialog"
+          aria-modal="true"
+          tabIndex={-1}
+        >
+          <div className="absolute top-0 left-0 p-4 z-50">
+            <button
+              className="bg-emerald-900/80 rounded-full p-2 shadow-md border border-emerald-700 text-emerald-200 hover:bg-emerald-800/90 transition"
+              onClick={closeBookModal}
+              aria-label="Back to Learn"
+            >
+              <X size={22} />
+            </button>
+          </div>
+          <div className="w-full max-w-2xl mx-auto pt-20 pb-10 px-4">
+            {(showBookPopup || transitioning) && (
               <div className="w-full flex flex-col">
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex-1">
                     <h2 className="text-2xl font-bold text-white mb-3 break-words">
-                      {selectedBook.title}
+                      {selectedBook?.title ?? ''}
                     </h2>
-                    {selectedBook.category && (
+                    {selectedBook?.category && (
                       <span className="inline-block px-3 py-1 bg-emerald-400/20 text-emerald-300 text-sm font-medium rounded-full">
                         {selectedBook.category}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center space-x-2 ml-4">
-
                     <button
                       onClick={e => {
                         e.stopPropagation();
-                        handleToggleFavourite(selectedBook.id);
+                        if (selectedBook) handleToggleFavourite(selectedBook.id);
                       }}
-                      className={`p-2 rounded-xl transition-colors ${isBookFavourited(selectedBook.id)
+                      className={`p-2 rounded-xl transition-colors ${selectedBook && isBookFavourited(selectedBook.id)
                         ? 'bg-yellow-500/20 text-yellow-400'
                         : 'bg-emerald-800/60 text-emerald-300 hover:text-yellow-400'
                         }`}
                     >
-                      <Star size={18} fill={isBookFavourited(selectedBook.id) ? 'currentColor' : 'none'} />
+                      <Star size={18} fill={selectedBook && isBookFavourited(selectedBook.id) ? 'currentColor' : 'none'} />
                     </button>
                   </div>
                 </div>
-
                 <div className="mb-8 max-w-prose mx-auto pr-4" style={{ whiteSpace: 'pre-line' }}>
                   <div className="text-emerald-100 text-lg leading-relaxed tracking-wide" style={{ letterSpacing: '0.01em' }}>
-                    {renderSummaryWithBoldAndItalic(selectedBook.summary)}
+                    {selectedBook?.summary ? renderSummaryWithBoldAndItalic(selectedBook.summary) : null}
                   </div>
                 </div>
-
                 <button
-                  onClick={() => handleMarkAsRead(selectedBook.id)}
-                  disabled={isBookRead(selectedBook.id)}
-                  className={`w-full py-4 px-6 font-bold text-lg rounded-2xl shadow-lg transition flex items-center justify-center space-x-2 ${isBookRead(selectedBook.id)
-                    ? 'bg-emerald-400/50 text-emerald-800 cursor-not-allowed'
+                  onClick={() => {
+                    if (selectedBook) {
+                      if (isBookRead(selectedBook.id)) {
+                        handleMarkAsUnread(selectedBook.id);
+                      } else {
+                        handleMarkAsRead(selectedBook.id);
+                      }
+                    }
+                  }}
+                  className={`w-full py-4 px-6 font-bold text-lg rounded-2xl shadow-lg transition flex items-center justify-center space-x-2 ${selectedBook && isBookRead(selectedBook.id)
+                    ? 'bg-emerald-400/50 text-emerald-800 hover:bg-emerald-400/70 hover:text-emerald-900 cursor-pointer'
                     : 'bg-emerald-400 text-emerald-900 active:bg-emerald-300'
                     }`}
                 >
-                  {isBookRead(selectedBook.id) ? (
+                  {selectedBook && isBookRead(selectedBook.id) ? (
                     <>
                       <Check size={20} />
                       <span>Read</span>
@@ -800,9 +903,9 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
                   )}
                 </button>
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Footer */}
         <div className="mt-12 text-center">
