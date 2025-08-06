@@ -1,3 +1,4 @@
 node_modules/
 .env
 dist/
+android/app/google-services.json
