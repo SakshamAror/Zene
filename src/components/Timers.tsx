@@ -6,6 +6,7 @@ import { useCallback } from 'react';
 import type { View } from '../App';
 import ReactDOM from 'react-dom';
 import { Emoji } from './Emoji';
+import toast from 'react-hot-toast';
 
 interface TimersProps {
     userId: string;
@@ -439,6 +440,23 @@ export default function Timers({ userId, setCurrentView, onTimerActiveChange }: 
     const [focusVolume, setFocusVolume] = useState(0.5);
     const focusAudioRef = useRef<HTMLAudioElement | null>(null);
     const focusIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    // Focus Timer Effect: count up when active
+    useEffect(() => {
+        if (isFocusActive) {
+            focusIntervalRef.current = setInterval(() => {
+                setFocusTime(time => time + 1);
+            }, 1000);
+        } else {
+            if (focusIntervalRef.current) {
+                clearInterval(focusIntervalRef.current);
+            }
+        }
+        return () => {
+            if (focusIntervalRef.current) {
+                clearInterval(focusIntervalRef.current);
+            }
+        };
+    }, [isFocusActive]);
 
     // Current Mode - Initialize based on user's main goal
     const [currentMode, setCurrentMode] = useState<TimerMode>('meditation');
@@ -649,8 +667,9 @@ export default function Timers({ userId, setCurrentView, onTimerActiveChange }: 
                 length: meditationDuration,
                 timestamp: new Date().toISOString(),
             });
+            toast.success('Meditation session saved!');
         } catch (error) {
-            // Optionally handle error
+            toast.error('Failed to save meditation session.');
         }
     };
 
@@ -661,8 +680,9 @@ export default function Timers({ userId, setCurrentView, onTimerActiveChange }: 
                 length: elapsedTime,
                 timestamp: new Date().toISOString(),
             });
+            toast.success('Meditation session saved!');
         } catch (error) {
-            // console.error('Error saving meditation session:', error);
+            toast.error('Failed to save meditation session.');
         }
     };
 
@@ -676,8 +696,9 @@ export default function Timers({ userId, setCurrentView, onTimerActiveChange }: 
                 timestamp: new Date().toISOString(),
             });
             setFocusSessions(prev => prev + 1);
+            toast.success('Focus session saved!');
         } catch (error) {
-            // console.error('Error saving focus session:', error);
+            toast.error('Failed to save focus session.');
         }
     };
 
@@ -692,6 +713,10 @@ export default function Timers({ userId, setCurrentView, onTimerActiveChange }: 
             setMeditationTimeLeft(meditationDuration);
             setIsMeditationCompleted(false);
             fadeOutAndStopAudios().then(() => stopAllMeditationAudio());
+            // Only show interruption toast if stopped with more than 30 seconds left
+            if (meditationTimeLeft > 30) {
+                toast.success('Timer interrupted.', { icon: '⏸️' });
+            }
         } else {
             // Start button pressed
             meditationCompletedRef.current = false; // RESET GUARD ON START
@@ -704,6 +729,10 @@ export default function Timers({ userId, setCurrentView, onTimerActiveChange }: 
         setMeditationTimeLeft(meditationDuration);
         setIsMeditationCompleted(false);
         fadeOutAndStopAudios().then(() => stopAllMeditationAudio());
+        // Only show interruption toast if stopped with more than 30 seconds left
+        if (meditationTimeLeft > 30) {
+            toast.success('Timer interrupted.', { icon: '⏸️' });
+        }
     };
 
     const toggleFocusStopwatch = () => {
@@ -713,6 +742,10 @@ export default function Timers({ userId, setCurrentView, onTimerActiveChange }: 
                 handleFocusSessionComplete();
             }
             setIsFocusActive(false);
+            // Only show interruption toast if stopped before 30 seconds
+            if (focusTime < 30) {
+                toast.success('Timer interrupted.', { icon: '⏸️' });
+            }
             setFocusTime(0);
             if (focusAudioRef.current) {
                 focusAudioRef.current.pause();
@@ -727,6 +760,10 @@ export default function Timers({ userId, setCurrentView, onTimerActiveChange }: 
 
     const cancelFocusSession = () => {
         setIsFocusActive(false);
+        // Only show interruption toast if stopped before 30 seconds
+        if (focusTime < 30) {
+            toast.success('Timer interrupted.', { icon: '⏸️' });
+        }
         setFocusTime(0);
         focusCompletedRef.current = false; // RESET GUARD ON CANCEL
         if (focusAudioRef.current) {

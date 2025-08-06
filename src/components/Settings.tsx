@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { getUserPrefs, upsertUserPrefs } from '../lib/saveData';
 import { User } from '@supabase/supabase-js';
 import { Emoji } from './Emoji';
+import toast from 'react-hot-toast';
 
 // Prebuilt avatars (should match Timers.tsx)
 const AVATARS = [
@@ -54,7 +55,6 @@ const Settings: React.FC<SettingsProps> = ({ user, signOut, refreshFriendNotific
     const [focusGoalMinutes, setFocusGoalMinutes] = useState(120);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [selectedAvatar, setSelectedAvatar] = useState<string>('leaf');
     const [friendEmail, setFriendEmail] = useState(''); // Only email, not user ID
@@ -236,7 +236,6 @@ const Settings: React.FC<SettingsProps> = ({ user, signOut, refreshFriendNotific
 
     const handleSave = async () => {
         setSaving(true);
-        setMessage(null);
         setError(null);
         try {
             // 1. Update name in auth user_metadata
@@ -263,9 +262,10 @@ const Settings: React.FC<SettingsProps> = ({ user, signOut, refreshFriendNotific
                 meditation_goal: meditationGoalMinutes,
                 focus_goal: focusGoalMinutes,
             });
-            setMessage('Settings saved!');
+            toast.success('Preferences saved!');
         } catch (e: any) {
             setError('Failed to save settings. ' + (e?.message || ''));
+            toast.error('Failed to save preferences.');
             console.error('Settings save error:', e);
         } finally {
             setSaving(false);
@@ -450,11 +450,6 @@ const Settings: React.FC<SettingsProps> = ({ user, signOut, refreshFriendNotific
                         />
                     </div>
 
-                    {message && (
-                        <div className="text-emerald-300 text-center font-medium">
-                            {message}
-                        </div>
-                    )}
                     {error && (
                         <div className="text-red-400 text-center font-medium">
                             {error}

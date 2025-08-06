@@ -13,6 +13,13 @@ import Onboarding from './components/Onboarding';
 import { getUserPrefs, upsertUserPrefs, saveMeditationSession, getMeditationSessions, getWorkSessions, getFriendNotifications, getVoiceMessagesForDate } from './lib/saveData';
 import type { MeditationSession, WorkSession } from './types';
 import { supabase } from './lib/supabase';
+import { Toaster, useToaster } from 'react-hot-toast';
+
+// Only import if available
+let PushNotifications: any = undefined;
+try {
+  PushNotifications = require('@capacitor/push-notifications').PushNotifications;
+} catch { }
 
 export type View = 'dashboard' | 'timers' | 'goals' | 'journal' | 'learn' | 'analytics' | 'settings';
 
@@ -31,6 +38,8 @@ function upsertProfileIfNeeded(user: any) {
 }
 
 function App() {
+  const { toasts } = useToaster();
+  const toastVisible = toasts.some(t => t.visible);
   const { user, loading, signOut } = useAuth();
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [darkMode, setDarkMode] = useState(true); // Default to dark mode for Opal style
@@ -192,6 +201,66 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    // Only run on mobile (Capacitor) builds
+    const isMobile = window && (window as any).Capacitor && (window as any).Capacitor.isNative;
+    if (!isMobile || !PushNotifications) return;
+    // Register for push notifications
+    interface PushNotificationPermissionResult {
+      receive: 'granted' | 'denied';
+    }
+
+    interface PushNotificationToken {
+      value: string;
+    }
+
+    interface PushNotification {
+      title: string;
+      body: string;
+      id: string;
+      data?: Record<string, any>;
+      [key: string]: any;
+    }
+
+    interface PushNotificationActionPerformed {
+      actionId: string;
+      inputValue?: string;
+      notification: PushNotification;
+    }
+
+    (PushNotifications as {
+      requestPermissions: () => Promise<PushNotificationPermissionResult>;
+      register: () => void;
+      addListener: (
+        event: 'registration' | 'registrationError' | 'pushNotificationReceived' | 'pushNotificationActionPerformed',
+        callback: (tokenOrErrorOrNotification: any) => void
+      ) => void;
+    }).requestPermissions().then((result: PushNotificationPermissionResult) => {
+      if (result.receive === 'granted') {
+        (PushNotifications as { register: () => void }).register();
+      }
+    });
+    // On registration
+    PushNotifications.addListener('registration', (token: any) => {
+      console.log('Push registration success, token:', token.value);
+      // TODO: Send token to your backend
+    });
+    // On registration error
+    PushNotifications.addListener('registrationError', (error: any) => {
+      console.error('Push registration error:', error);
+    });
+    // On push notification received
+    PushNotifications.addListener('pushNotificationReceived', (notification: any) => {
+      console.log('Push received:', notification);
+      // Optionally show a toast or in-app alert
+    });
+    // On push notification action performed
+    PushNotifications.addListener('pushNotificationActionPerformed', (notification: any) => {
+      console.log('Push action performed:', notification);
+      // Optionally handle navigation or custom logic
+    });
+  }, []);
+
   if (loading || showOnboarding === null) {
     return (
       <div className="min-h-screen opal-bg flex items-center justify-center">
@@ -266,12 +335,36 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen opal-bg">
+    <div className="min-h-screen opal-bg" style={{ position: 'relative' }}>
+      {/* Top blur overlay when toast is visible */}
+      {toastVisible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '25vh',
+            zIndex: 100,
+            pointerEvents: 'none',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            background: 'rgba(0, 145, 104, 0.12)',
+            transition: 'opacity 0.5s',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 10%, transparent 80%)',
+            maskImage: 'linear-gradient(to bottom, black 10%, transparent 80%)',
+          }}
+        />
+      )}
+      <Toaster position="top-center" toastOptions={{
+        style: { background: "#064e3b", color: "#fff", fontWeight: 500 },
+        success: { style: { background: "#064e3b", color: "#fff" } },
+        error: { style: { background: "#ef4444", color: "#fff" } },
+      }} />
       {/* Main Content */}
       <main className="flex-1 pb-24">
         {renderCurrentView()}
       </main>
-
       {/* Floating Bottom Navigation */}
       {currentView !== 'analytics' && !bookPopupOpen && !voicePopupOpen && (
         <nav className={`fixed bottom-0 left-0 w-full z-50 bottom-navbar transition-transform duration-500 ${timerActive ? 'translate-y-full' : 'translate-y-0'}`}>

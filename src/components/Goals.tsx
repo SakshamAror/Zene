@@ -4,6 +4,7 @@ import { getGoals, saveGoal, updateGoal, deleteGoal } from '../lib/saveData';
 import type { Goal } from '../types';
 import { offlineStorage } from '../lib/offlineStorage';
 import { Emoji } from './Emoji';
+import { toast } from 'react-hot-toast';
 
 interface GoalsProps {
   userId: string;
@@ -116,6 +117,8 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
         }
       }
 
+      toast.success('Goal added!');
+
       // Force immediate sync for critical operations
       if (offlineStorage && typeof offlineStorage.forceSync === 'function' && userId) {
         // Use setTimeout to ensure the save operation completes first
@@ -128,6 +131,7 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
     } catch (error) {
       console.error('Error adding goal:', error);
       setError('Failed to add goal. Please try again.');
+      toast.error('Failed to add goal.');
     } finally {
       setSaving(false);
     }
@@ -150,6 +154,8 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
         goal.id === goalId ? { ...goal, completed: !currentCompleted } : goal
       ));
 
+      toast.success(!currentCompleted ? 'Goal completed!' : 'Goal marked as incomplete.');
+
       // Force immediate sync for critical operations
       if (offlineStorage && typeof offlineStorage.forceSync === 'function' && userId) {
         // Use setTimeout to ensure the update operation completes first
@@ -162,6 +168,7 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
     } catch (error) {
       console.error('Error toggling goal:', error);
       setError('Failed to update goal. Please try again.');
+      toast.error('Failed to update goal.');
       // Revert optimistic update on error
       await loadGoals();
     } finally {
@@ -184,6 +191,8 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
       // Update state optimistically
       setGoals(prev => prev.filter(goal => goal.id !== goalId));
 
+      toast.success('Goal deleted.');
+
       // Force immediate sync for critical operations
       if (offlineStorage && typeof offlineStorage.forceSync === 'function' && userId) {
         // Use setTimeout to ensure the delete operation completes first
@@ -196,6 +205,7 @@ export default function Goals({ userId, needsInitialGoals = false, onFirstGoal }
     } catch (error) {
       console.error('Error deleting goal:', error);
       setError('Failed to delete goal. Please try again.');
+      toast.error('Failed to delete goal.');
       // Revert optimistic update on error
       await loadGoals();
     } finally {

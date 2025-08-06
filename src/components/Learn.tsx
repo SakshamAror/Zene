@@ -3,6 +3,7 @@ import { BookOpen, Heart, Star, Search, X, Check } from 'lucide-react';
 import { getBookSummaries, getUserBookStatus, upsertUserBookStatus } from '../lib/saveData';
 import type { BookSummary, UserBookStatus } from '../types';
 import { Emoji } from './Emoji';
+import toast from 'react-hot-toast';
 
 interface LearnProps {
   userId: string;
@@ -396,14 +397,11 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
           return (b.timestamp || '').localeCompare(a.timestamp || '');
         });
       });
+      toast.success(newFavouriteStatus ? 'Book added to favourites!' : 'Book removed from favourites.');
     } catch (error) {
       console.error('Error toggling favourite:', error);
+      toast.error('Failed to update favourite.');
     }
-  };
-
-  const isBookRead = (bookId: string) => {
-    const bookStatus = userBookStatus.find(status => status.book_summary_id === bookId);
-    return bookStatus?.is_read || false;
   };
 
   const handleMarkAsRead = async (bookId: string) => {
@@ -432,10 +430,12 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
           },
         ];
       });
+      toast.success('Marked as read!');
       // Automatically close the popup after marking as read
       closeBookModal();
     } catch (error) {
       console.error('Error marking as read:', error);
+      toast.error('Failed to mark as read.');
     }
   };
 
@@ -465,9 +465,103 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
           },
         ];
       });
+      toast.success('Marked as unread.');
     } catch (error) {
       console.error('Error marking as unread:', error);
+      toast.error('Failed to mark as unread.');
     }
+  };
+
+  const handleSetBookmark = async (bookId: string) => {
+    try {
+      if (!popupRef.current) return;
+
+      const scrollTop = popupRef.current.scrollTop;
+      const scrollHeight = popupRef.current.scrollHeight - popupRef.current.clientHeight;
+      const bookmarkPosition = scrollHeight > 0 ? Math.round((scrollTop / scrollHeight) * 100) : 0;
+      const existingStatus = userBookStatus.find(status => status.book_summary_id === bookId);
+      const alreadyBookmarked = (existingStatus?.bookmark_position || 0) > 0;
+      // Remove bookmark if already set, or if near 0
+      if (alreadyBookmarked && bookmarkPosition === existingStatus?.bookmark_position) {
+        await upsertUserBookStatus({
+          user_id: userId,
+          book_summary_id: bookId,
+          is_favourite: existingStatus?.is_favourite || false,
+          is_read: existingStatus?.is_read || false,
+          bookmark_position: 0,
+          timestamp: new Date().toISOString(),
+        });
+        setUserBookStatus(prev => {
+          const filtered = prev.filter(status => status.book_summary_id !== bookId);
+          return [...filtered, {
+            id: existingStatus?.id || `temp-${Date.now()}`,
+            user_id: userId,
+            book_summary_id: bookId,
+            is_favourite: existingStatus?.is_favourite || false,
+            is_read: existingStatus?.is_read || false,
+            bookmark_position: 0,
+            timestamp: new Date().toISOString().split('T')[0],
+          }];
+        });
+        toast('Bookmark removed.', { icon: '🔖', style: { background: '#064e3b', color: '#fff' } });
+        return;
+      }
+      // Remove bookmark if near 0
+      if (bookmarkPosition <= 1) {
+        await upsertUserBookStatus({
+          user_id: userId,
+          book_summary_id: bookId,
+          is_favourite: existingStatus?.is_favourite || false,
+          is_read: existingStatus?.is_read || false,
+          bookmark_position: 0,
+          timestamp: new Date().toISOString(),
+        });
+        setUserBookStatus(prev => {
+          const filtered = prev.filter(status => status.book_summary_id !== bookId);
+          return [...filtered, {
+            id: existingStatus?.id || `temp-${Date.now()}`,
+            user_id: userId,
+            book_summary_id: bookId,
+            is_favourite: existingStatus?.is_favourite || false,
+            is_read: existingStatus?.is_read || false,
+            bookmark_position: 0,
+            timestamp: new Date().toISOString().split('T')[0],
+          }];
+        });
+        toast('Bookmark removed.', { icon: '🔖', style: { background: '#064e3b', color: '#fff' } });
+        return;
+      }
+      // Otherwise, set bookmark
+      await upsertUserBookStatus({
+        user_id: userId,
+        book_summary_id: bookId,
+        is_favourite: existingStatus?.is_favourite || false,
+        is_read: existingStatus?.is_read || false,
+        bookmark_position: bookmarkPosition,
+        timestamp: new Date().toISOString(),
+      });
+      setUserBookStatus(prev => {
+        const filtered = prev.filter(status => status.book_summary_id !== bookId);
+        return [...filtered, {
+          id: existingStatus?.id || `temp-${Date.now()}`,
+          user_id: userId,
+          book_summary_id: bookId,
+          is_favourite: existingStatus?.is_favourite || false,
+          is_read: existingStatus?.is_read || false,
+          bookmark_position: bookmarkPosition,
+          timestamp: new Date().toISOString().split('T')[0],
+        }];
+      });
+      toast.success('Bookmark set!');
+    } catch (error) {
+      console.error('Error setting bookmark:', error);
+      toast.error('Failed to set bookmark.');
+    }
+  };
+
+  const isBookRead = (bookId: string) => {
+    const bookStatus = userBookStatus.find(status => status.book_summary_id === bookId);
+    return bookStatus?.is_read || false;
   };
 
   // Auto-scroll to bookmark when opening a book summary with a bookmark
@@ -485,41 +579,6 @@ export default function Learn({ userId, onBookOpen, onBookClose }: LearnProps) {
       }
     }
   }, [selectedBook, userBookStatus]);
-
-  const handleSetBookmark = async (bookId: string) => {
-    try {
-      if (!popupRef.current) return;
-
-      const scrollTop = popupRef.current.scrollTop;
-      const scrollHeight = popupRef.current.scrollHeight - popupRef.current.clientHeight;
-      const bookmarkPosition = scrollHeight > 0 ? Math.round((scrollTop / scrollHeight) * 100) : 0;
-
-      const existingStatus = userBookStatus.find(status => status.book_summary_id === bookId);
-      await upsertUserBookStatus({
-        user_id: userId,
-        book_summary_id: bookId,
-        is_favourite: existingStatus?.is_favourite || false,
-        is_read: existingStatus?.is_read || false,
-        bookmark_position: bookmarkPosition,
-        timestamp: new Date().toISOString(),
-      });
-
-      setUserBookStatus(prev => {
-        const filtered = prev.filter(status => status.book_summary_id !== bookId);
-        return [...filtered, {
-          id: existingStatus?.id || `temp-${Date.now()}`,
-          user_id: userId,
-          book_summary_id: bookId,
-          is_favourite: existingStatus?.is_favourite || false,
-          is_read: existingStatus?.is_read || false,
-          bookmark_position: bookmarkPosition,
-          timestamp: new Date().toISOString().split('T')[0],
-        }];
-      });
-    } catch (error) {
-      console.error('Error setting bookmark:', error);
-    }
-  };
 
   const getBookmarkPosition = (bookId: string) => {
     const bookStatus = userBookStatus.find(status => status.book_summary_id === bookId);

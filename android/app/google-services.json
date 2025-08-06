@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "421770320352",
+    "project_id": "zene-2db71",
+    "storage_bucket": "zene-2db71.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:421770320352:android:ff1eeecedb7d961475f385",
+        "android_client_info": {
+          "package_name": "com.saksh.zene"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUTtus4rwV22_A19Duz1TBcBpvdWjRIAI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

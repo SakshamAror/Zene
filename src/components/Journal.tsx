@@ -7,6 +7,7 @@ import { getVoiceMessages, saveVoiceMessage, getVoiceMessagesForDate, markVoiceM
 import { uploadVoiceMessage, supabase } from '../lib/supabase';
 import type { VoiceMessage } from '../types';
 import { offlineStorage } from '../lib/offlineStorage';
+import toast from 'react-hot-toast';
 
 interface JournalProps {
   userId: string;
@@ -314,6 +315,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen, onV
           timestamp: timestamp,
         };
         await saveJournalLog(logData);
+        toast.success('Journal entry saved!');
       }
 
       // Reload logs to update UI
@@ -321,6 +323,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen, onV
       setContent('');
     } catch (error) {
       console.error('Error saving/deleting journal entry:', error);
+      toast.error('Failed to save journal entry.');
     } finally {
       setSaving(false);
     }
@@ -609,7 +612,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen, onV
           played: false,
         });
 
-        alert('Voice message saved locally (Supabase upload failed). You can test the reminder functionality.');
+        toast.success('Voice message saved locally!');
       } else {
         // Save voice message with the uploaded path
         await saveVoiceMessage({
@@ -620,6 +623,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen, onV
           title: voiceTitle,
           played: false,
         });
+        toast.success('Voice message saved!');
       }
 
       // Reset form
@@ -774,6 +778,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen, onV
     if (loadingMessageId === id) {
       setLoadingMessageId(null);
     }
+    toast.success('Voice message deleted!');
   };
 
   // Relay a voice message to a different date
@@ -825,6 +830,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen, onV
       // Open the voice popup
       setVoicePopupOpen(true);
       if (onVoiceMessageStatusChange) onVoiceMessageStatusChange();
+      toast.success('Voice message relayed!');
     } catch (error) {
       console.error('Error relaying voice message:', error);
       alert('Failed to relay voice message. Please try again.');
@@ -1115,7 +1121,7 @@ export default function Journal({ userId, voicePopupOpen, setVoicePopupOpen, onV
                     <button
                       key={log.id ? log.id : `${log.timestamp}-${idx}`}
                       onClick={() => setSelectedDate(log.timestamp && log.timestamp.split('T')[0])}
-                      className={`w-full text-left p-4 rounded-2xl transition-all ${selectedDate === (log.timestamp && log.timestamp.split('T')[0])
+                      className={`w-full text-left p-4 rounded-2xl transition ${selectedDate === (log.timestamp && log.timestamp.split('T')[0])
                         ? 'bg-emerald-400/20 border border-emerald-400/30'
                         : 'bg-emerald-900/60 border border-emerald-700 hover:bg-emerald-800/60'
                         }`}
