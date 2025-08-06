@@ -1,5 +1,3 @@
-// In your app/src/main/java/com/saksh/zene/MainActivity.java file
-
 package com.saksh.zene;
 
 // Existing import for Capacitor
