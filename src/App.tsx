@@ -7,13 +7,15 @@ import Goals from './components/Goals.tsx';
 import Journal from './components/Journal.tsx';
 import Learn from './components/Learn.tsx';
 import Analytics from './components/Analytics.tsx';
-import { Home, Clock, Target, BookOpen, PenTool, BarChart3, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
+import { Home, Clock, Target, BookOpen, PenTool, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
 import Settings from './components/Settings';
 import Onboarding from './components/Onboarding';
 import { getUserPrefs, upsertUserPrefs, saveMeditationSession, getMeditationSessions, getWorkSessions, getFriendNotifications, getVoiceMessagesForDate } from './lib/saveData';
 import type { MeditationSession, WorkSession } from './types';
 import { supabase } from './lib/supabase';
 import { Toaster, useToaster } from 'react-hot-toast';
+import { StatusBar, Style } from '@capacitor/status-bar';
+
 
 // Only import if available
 let PushNotifications: any = undefined;
@@ -75,6 +77,11 @@ function App() {
       setDarkMode(true);
       document.documentElement.classList.add('dark');
     }
+  }, []);
+
+  useEffect(() => {
+    StatusBar.setBackgroundColor({ color: '#064e3b' }); // emerald-ish background
+    StatusBar.setStyle({ style: Style.Dark }); // for light text
   }, []);
 
   useEffect(() => {

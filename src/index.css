@@ -26,6 +26,11 @@ html {
   background: linear-gradient(to bottom, #047857 10%, #064e3b 75%);
   background-color: #064e3b;
   color: #fff;
+
+  /* Safe area padding */
+  padding-top: env(safe-area-inset-top);
+  /* Disable overscroll stretch */
+  overscroll-behavior: none;
 }
 
 /* Dark mode transitions */
@@ -688,17 +693,6 @@ html {
   border-radius: 24px;
   max-height: 90vh;
   overflow-y: auto;
-}
-
-/* Safe area handling for mobile */
-@supports (padding: max(0px)) {
-  .safe-area-top {
-    padding-top: max(16px, env(safe-area-inset-top));
-  }
-
-  .safe-area-bottom {
-    padding-bottom: max(16px, env(safe-area-inset-bottom));
-  }
 }
 
 /* Additional mobile responsiveness improvements */
