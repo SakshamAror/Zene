@@ -27,8 +27,10 @@ html {
   background-color: #064e3b;
   color: #fff;
 
-  /* Safe area padding */
   padding-top: env(safe-area-inset-top);
+  /* Padding to make sure elements are not in top safe area */
+  padding-bottom: env(safe-area-inset-bottom);
+  /* Padding to make sure elements are not in bottom safe area */
   /* Disable overscroll stretch */
   overscroll-behavior: none;
 }
