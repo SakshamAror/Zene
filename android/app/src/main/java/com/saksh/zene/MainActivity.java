@@ -9,12 +9,15 @@ import com.google.android.gms.tasks.Task;
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 import android.view.View;
+import android.webkit.WebView;
 
 public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(android.os.Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getWindow().setDecorFitsSystemWindows(false);
 
         // --- ADD THE FCM TOKEN CODE HERE ---
         FirebaseMessaging.getInstance().getToken()
@@ -32,6 +35,7 @@ public class MainActivity extends BridgeActivity {
                 }
             });
         
-        getWindow().getDecorView().setOverScrollMode(View.OVER_SCROLL_NEVER);
+        WebView webView = (WebView) this.bridge.getWebView();
+        webView.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
     }
 }
